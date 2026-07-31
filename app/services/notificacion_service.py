@@ -38,26 +38,25 @@ import logging
 
 logger = logging.getLogger("EmailDestination")
 
-def _enviar_smtp(destinatario_email, destinatario_nombre, asunto, cuerpo_html):
-    # Credenciales de tu cuenta de Gmail personal o dedicada al sistema
-    remitente_email = "tu_correo@gmail.com"
-    remitente_password = "tu_contraseña_de_aplicacion" # Contraseña de 16 caracteres de Google
+import resend
 
-    msg = EmailMessage()
-    msg["Subject"] = asunto
-    msg["From"] = remitente_email
-    msg["To"] = destinatario_email
-    msg.set_content(cuerpo_html, subtype="html")
+def _enviar_con_resend(destinatarios, asunto, cuerpo_html):
+    # Lee la llave que configuraremos en PythonAnywhere
+    resend.api_key = os.environ.get("RESEND_API_KEY")
+    
+    # Resend acepta una lista de correos en 'to'
+    params = {
+        "from": "Torneos DCEA <onboarding@resend.dev>",
+        "to": list(destinatarios),
+        "subject": asunto,
+        "html": cuerpo_html.replace("\n", "<br>"), # Pasa tus textos planos a formato HTML básico
+    }
 
     try:
-        # PythonAnywhere permite la conexión con smtp.gmail.com por el puerto 465
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(remitente_email, remitente_password)
-            smtp.send_message(msg)
-        logger.info(f"Correo enviado exitosamente a {destinatario_nombre} ({destinatario_email})")
+        response = resend.Emails.send(params)
         return True
     except Exception as e:
-        logger.error(f"Error al enviar correo a {destinatario_email}: {e}")
+        print(f"Error al enviar correo con Resend: {e}", flush=True)
         return False
 
 def enviar_correo(destinatarios, asunto, cuerpo):
@@ -65,18 +64,22 @@ def enviar_correo(destinatarios, asunto, cuerpo):
     if not destinatarios:
         return
     
-    api_key = os.environ.get("BREVO_API_KEY")
-    servidor = os.environ.get("MAIL_SERVER") or (True if api_key else None)
+    # Verificamos si tenemos configurada la API key de Resend
+    resend_key = os.environ.get("RESEND_API_KEY")
 
     try:
-        if servidor:
-            _enviar_smtp(destinatarios, asunto, cuerpo, servidor)
+        if resend_key:
+            exito = _enviar_con_resend(destinatarios, asunto, cuerpo)
+            if not exito:
+                _registrar_en_log(destinatarios, f"[FALLO RESEND] {asunto}", cuerpo)
         else:
+            # Si no hay llave configurada, se va al log local de desarrollo
             _registrar_en_log(destinatarios, asunto, cuerpo)
     except Exception as e:
         print(f"CRITICAL MAIL ERROR: {e}", flush=True)
         _registrar_en_log(destinatarios, f"[ERROR AL ENVIAR] {asunto}", f"{cuerpo}\n\nError: {e}")
 
+        
 def _correos_organizacion():
     from app.models import Usuario
     return [u.email for u in Usuario.query.filter(Usuario.rol.in_(["organizador", "ayudante"])).all()]
