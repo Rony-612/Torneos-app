@@ -1,0 +1,30 @@
+{% extends "admin/base.html" %}
+{% block title %}Noticias{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-8">Noticias</h1>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 p-7 mb-8">
+  <h3 class="font-display text-xl font-bold text-navy mb-5">Publicar noticia</h3>
+  <form method="POST" class="space-y-4">
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Título</label>
+      <input type="text" name="titulo" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+    </div>
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Contenido</label>
+      <textarea name="contenido" rows="4" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none"></textarea>
+    </div>
+    <button type="submit" class="bg-gradient-to-r from-navy to-navy-light hover:shadow-elevation text-white font-bold px-6 py-2.5 rounded-lg transition-all">Publicar</button>
+  </form>
+</div>
+
+<div class="space-y-4">
+{% for n in noticias %}
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-6">
+    <h3 class="font-display text-lg font-bold text-navy">{{ n.titulo }}</h3>
+    <p class="text-xs text-gray-500 mt-1">{{ n.fecha_publicacion.strftime('%d/%m/%Y') }}</p>
+    <p class="text-sm text-gray-600 mt-3">{{ n.contenido }}</p>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

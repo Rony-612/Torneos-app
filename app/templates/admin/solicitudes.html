@@ -1,0 +1,63 @@
+{% extends "admin/base.html" %}
+{% block title %}Solicitudes de cambio de horario{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Solicitudes de cambio de horario</h1>
+<p class="text-gray-600 mb-8">Cuando ambos capitanes ya están de acuerdo, tú das la aprobación final.</p>
+
+<h3 class="font-display text-xl font-bold text-navy mb-4">Pendientes de tu aprobación</h3>
+<div class="space-y-4 mb-10">
+  {% for s in pendientes %}
+    <div class="bg-white rounded-xl shadow-card border-2 border-gold-light p-6">
+      <p class="font-semibold text-navy">
+        {{ s.partido.equipo_local.nombre }} vs {{ s.partido.equipo_visitante.nombre }}
+      </p>
+      <p class="text-sm text-gray-600 mt-1">
+        Horario actual: {{ s.partido.fecha.strftime('%d/%m/%Y') }} {{ s.partido.hora.strftime('%H:%M') }}
+        &rarr; Propuesto: <strong>{{ s.nueva_fecha.strftime('%d/%m/%Y') }} {{ s.nueva_hora.strftime('%H:%M') }}</strong>
+      </p>
+      <p class="text-xs text-gray-500 mt-1">Solicitado por {{ s.equipo_solicitante.nombre }}. Ambos equipos ya aceptaron.</p>
+      {% if s.comentario %}<p class="text-sm text-gray-600 mt-2 italic">"{{ s.comentario }}"</p>{% endif %}
+      <form method="POST" action="{{ url_for('admin.resolver_solicitud', solicitud_id=s.id) }}" class="mt-4 flex gap-3">
+        <button type="submit" name="decision" value="aprobar" class="bg-gradient-to-r from-navy to-navy-light text-white font-bold px-5 py-2 rounded-lg text-sm">Aprobar y aplicar</button>
+        <button type="submit" name="decision" value="rechazar" class="text-red-600 hover:text-red-800 font-bold px-5 py-2 text-sm border border-red-200 rounded-lg hover:bg-red-50">Rechazar</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="text-gray-500">No hay solicitudes pendientes de tu aprobación.</p>
+  {% endfor %}
+</div>
+
+<h3 class="font-display text-xl font-bold text-navy mb-4">Rechazadas por el equipo rival — requieren tu decisión</h3>
+<div class="space-y-4 mb-10">
+  {% for s in rechazadas_por_rival %}
+    <div class="bg-white rounded-xl shadow-card border-2 border-red-200 p-6">
+      <p class="font-semibold text-navy">
+        {{ s.partido.equipo_local.nombre }} vs {{ s.partido.equipo_visitante.nombre }}
+      </p>
+      <p class="text-sm text-gray-600 mt-1">
+        {{ s.equipo_solicitante.nombre }} propuso cambiar el horario, pero el rival no aceptó ninguna opción.
+        Horario actual: {{ s.partido.fecha.strftime('%d/%m/%Y') }} {{ s.partido.hora.strftime('%H:%M') }}
+      </p>
+      {% if s.comentario %}<p class="text-sm text-gray-600 mt-2 italic">"{{ s.comentario }}"</p>{% endif %}
+      <form method="POST" action="{{ url_for('admin.resolver_rechazo', solicitud_id=s.id) }}" class="mt-4 flex gap-3 flex-wrap">
+        <button type="submit" name="decision" value="dejar_igual" class="bg-gradient-to-r from-navy to-navy-light text-white font-bold px-5 py-2 rounded-lg text-sm">Dejar el partido igual</button>
+        <button type="submit" name="decision" value="suspender" class="text-red-600 hover:text-red-800 font-bold px-5 py-2 text-sm border border-red-200 rounded-lg hover:bg-red-50">Marcar como pendiente</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="text-gray-500">No hay rechazos esperando tu decisión.</p>
+  {% endfor %}
+</div>
+
+<h3 class="font-display text-xl font-bold text-navy mb-4">Historial</h3>
+<div class="space-y-3">
+  {% for s in historial %}
+    <div class="bg-white rounded-xl shadow-card border border-gray-100 p-5 flex items-center justify-between flex-wrap gap-3">
+      <p class="text-sm text-gray-700">{{ s.partido.equipo_local.nombre }} vs {{ s.partido.equipo_visitante.nombre }} &middot; propuesto por {{ s.equipo_solicitante.nombre }}</p>
+      <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ 'badge-green' if s.estado == 'aprobado' else 'badge-red' }}">{{ s.estado }}</span>
+    </div>
+  {% else %}
+    <p class="text-gray-500">Sin historial todavía.</p>
+  {% endfor %}
+</div>
+{% endblock %}

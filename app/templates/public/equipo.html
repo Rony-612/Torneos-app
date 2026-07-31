@@ -1,0 +1,50 @@
+{% extends "public/base.html" %}
+{% block title %}{{ equipo.nombre }}{% endblock %}
+{% block content %}
+<div class="bg-gradient-to-r from-navy to-navy-light rounded-xl shadow-elevation p-8 text-white mb-8 flex items-center gap-5">
+  <div class="w-16 h-16 rounded-full bg-white/15 flex items-center justify-center text-white font-display font-bold text-2xl flex-shrink-0">
+    {{ equipo.nombre[:2].upper() }}
+  </div>
+  <h1 class="font-display text-2xl sm:text-3xl font-bold">{{ equipo.nombre }}</h1>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-6">
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+    <h3 class="font-display text-lg font-bold text-navy mb-5">Jugadores</h3>
+    {% if jugadores %}
+      <div class="grid sm:grid-cols-2 gap-2">
+        {% for j in jugadores %}
+          <a href="{{ url_for('public.jugador_detalle', jugador_id=j.id) }}" class="text-sm font-semibold text-navy hover:text-gold-dark p-2 rounded-lg hover:bg-gray-50">{{ j.nombre }}</a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-400 text-sm">Sin jugadores registrados.</p>
+    {% endif %}
+  </div>
+
+  <div class="space-y-6">
+    <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+      <h3 class="font-display text-lg font-bold text-navy mb-4">Próximos partidos</h3>
+      {% for p in proximos %}
+        <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+          <span class="text-sm text-gray-700">{{ p.equipo_local.nombre }} vs {{ p.equipo_visitante.nombre }}</span>
+          <span class="text-xs text-gray-500 font-semibold">{{ p.fecha.strftime('%d/%m') }}</span>
+        </div>
+      {% else %}
+        <p class="text-gray-400 text-sm">Sin partidos próximos.</p>
+      {% endfor %}
+    </div>
+
+    <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+      <h3 class="font-display text-lg font-bold text-navy mb-4">Últimos partidos</h3>
+      {% for p in jugados[-5:] %}
+        <a href="{{ url_for('public.partido_detalle', partido_id=p.id) }}" class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0 hover:text-gold-dark">
+          <span class="text-sm text-gray-700">{{ p.equipo_local.nombre }} {{ p.resultado_local }} - {{ p.resultado_visitante }} {{ p.equipo_visitante.nombre }}</span>
+        </a>
+      {% else %}
+        <p class="text-gray-400 text-sm">Sin partidos jugados.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

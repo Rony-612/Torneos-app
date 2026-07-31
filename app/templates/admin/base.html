@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Panel{% endblock %} · Torneo DCEA · Organizador</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      colors: {
+        navy: { DEFAULT: '#002F6C', dark: '#001C42', light: '#0A4A9E', accent: '#1B5FC7' },
+        gold: { DEFAULT: '#FFC400', light: '#FFD740', pale: '#FFF9E6', dark: '#E6A800' },
+        purple: '#7030A0', paper: '#FAFAFA',
+      },
+      fontFamily: { display: ['Plus Jakarta Sans', 'sans-serif'], sans: ['Inter', 'sans-serif'] },
+      boxShadow: {
+        card: '0 2px 8px rgba(0, 47, 108, 0.08), 0 4px 16px rgba(0, 47, 108, 0.04)',
+        elevation: '0 8px 24px rgba(0, 47, 108, 0.12)',
+      }
+    } }
+  }
+</script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%); min-height: 100vh; }
+  .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
+  .tab-link { position: relative; font-weight: 600; color: #9CA3AF; padding: 14px 0; white-space: nowrap; }
+  .tab-link.active { color: #002F6C; }
+  .tab-link.active::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px;
+    background: linear-gradient(90deg, #FFC400, #FFD740); border-radius: 2px;
+  }
+  .card-hover { transition: all .3s ease; }
+  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0, 47, 108, 0.15); }
+  .badge-green { background: #DCFCE7; color: #16A34A; }
+  .badge-red { background: #FEE2E2; color: #DC2626; }
+  .badge-yellow { background: #FEF3C7; color: #A16207; }
+  .badge-blue { background: #E6F1FB; color: #002F6C; }
+  .badge-gold { background: linear-gradient(135deg, #FFC400, #FFD740); color: #001C42; }
+  .gradient-accent { background: linear-gradient(135deg, #FFC400, #7030A0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+</style>
+</head>
+<body>
+
+<header class="sticky top-0 z-40 bg-white/85 backdrop-blur-xl border-b border-gray-200">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="{{ url_for('admin.dashboard') }}" class="flex items-center gap-3.5">
+      <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-navy to-navy-light flex items-center justify-center shadow-lg">
+        <svg width="24" height="24" viewBox="0 0 40 40" fill="none">
+          <path d="M20 4 L32 12 V28 C32 34 28 37 20 38 C12 37 8 34 8 28 V12 Z" stroke="#FFC400" stroke-width="2" fill="none"/>
+          <circle cx="20" cy="20" r="6" fill="#FFC400"/>
+        </svg>
+      </div>
+      <div class="leading-tight">
+        <p class="font-display font-bold text-navy text-[15px] sm:text-base">Torneo <span class="gradient-accent">DCEA</span></p>
+        <p class="text-[10px] text-gray-500 tracking-widest uppercase font-semibold hidden sm:block">Organizador</p>
+      </div>
+    </a>
+    <div class="flex items-center gap-4">
+      <a href="{{ url_for('public.home') }}" class="text-sm font-semibold text-navy hover:text-gold hidden sm:inline">Sitio público</a>
+      <a href="{{ url_for('admin.logout') }}" class="text-sm font-semibold text-red-600 hover:text-red-800">Salir</a>
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gold to-gold-dark text-navy font-display font-bold flex items-center justify-center shadow-lg">
+        {{ current_user.nombre[:2].upper() if current_user.is_authenticated else '' }}
+      </div>
+    </div>
+  </div>
+  <nav class="max-w-7xl mx-auto px-5 sm:px-8 flex gap-7 border-t border-gray-100 overflow-x-auto">
+    {% macro navlink(endpoint, label) %}
+      <a href="{{ url_for(endpoint) }}" class="tab-link {{ 'active' if request.endpoint == endpoint }}">{{ label }}</a>
+    {% endmacro %}
+    {{ navlink('admin.dashboard', 'Jornadas') }}
+    {{ navlink('admin.grupos', 'Grupos') }}
+    {{ navlink('admin.equipos', 'Equipos') }}
+    {{ navlink('admin.documentos', 'Documentos') }}
+    {{ navlink('admin.arbitrajes', 'Arbitrajes') }}
+    {{ navlink('admin.pagos_cancha', 'Pagos de cancha') }}
+    {{ navlink('admin.horarios', 'Horarios') }}
+    {{ navlink('admin.solicitudes', 'Solicitudes') }}
+    {{ navlink('admin.pendientes', 'Pendientes') }}
+    {{ navlink('admin.noticias', 'Noticias') }}
+    {{ navlink('admin.avisos', 'Avisos') }}
+  </nav>
+</header>
+
+<main class="max-w-7xl mx-auto px-5 sm:px-8 py-10">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-6 space-y-2">
+      {% for category, message in messages %}
+        <div class="rounded-lg px-4 py-3 text-sm font-semibold {{ 'bg-red-50 text-red-700 border border-red-200' if category == 'error' else 'bg-green-50 text-green-700 border border-green-200' }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+{% extends "public/base.html" %}
+{% from "_macros/jornada_grid.html" import tabla_jornada %}
+{% block title %}Calendario{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-8">Calendario</h1>
+{% if not jornadas_con_grid %}
+  <p class="text-gray-400">Aún no hay jornadas publicadas.</p>
+{% endif %}
+<div class="space-y-8">
+{% for jornada, grid in jornadas_con_grid %}
+  {{ tabla_jornada(jornada, grid, modo='ver', link_endpoint='public.partido_detalle') }}
+{% endfor %}
+</div>
+{% endblock %}

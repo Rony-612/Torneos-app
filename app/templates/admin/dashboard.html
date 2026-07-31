@@ -1,0 +1,47 @@
+{% extends "admin/base.html" %}
+{% block title %}Jornadas{% endblock %}
+{% block content %}
+<div class="mb-8">
+  <h1 class="font-display text-3xl sm:text-4xl font-bold text-navy">Jornadas</h1>
+  <p class="text-gray-600 text-base mt-2">Arma, revisa y publica cada jornada del torneo.</p>
+</div>
+
+<div class="grid sm:grid-cols-3 gap-5 mb-8">
+  <div class="card-hover bg-white rounded-xl shadow-card border border-gray-100 p-6">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">👥 Equipos registrados</p>
+    <p class="font-display text-3xl font-bold text-navy mt-3">{{ equipos_count }}</p>
+  </div>
+  <div class="card-hover bg-white rounded-xl shadow-card border border-gray-100 p-6">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">🧍 Jugadores registrados</p>
+    <p class="font-display text-3xl font-bold text-navy mt-3">{{ jugadores_count }}</p>
+  </div>
+  <div class="card-hover bg-white rounded-xl shadow-card border border-gold-light p-6 flex flex-col justify-between">
+    <p class="text-xs uppercase tracking-widest text-gold-dark font-bold">+ Nueva jornada</p>
+    <form method="POST" action="{{ url_for('admin.crear_jornada') }}" class="mt-3">
+      <button type="submit" class="w-full bg-gradient-to-r from-navy to-navy-light hover:shadow-elevation text-white font-bold py-2.5 rounded-lg transition-all text-sm">Crear jornada en borrador</button>
+    </form>
+  </div>
+</div>
+
+<div class="bg-gradient-to-r from-gold-pale to-white rounded-xl shadow-card border border-gold-light p-6 mb-8">
+  <p class="font-bold text-navy">¿Prefieres que el sistema arme la jornada por ti?</p>
+  <p class="text-sm text-gray-600 mt-1">Usa la disponibilidad que los capitanes registraron para generar una propuesta automática.</p>
+  <a href="{{ url_for('admin.horarios') }}" class="inline-block mt-3 text-sm font-bold text-navy hover:text-gold">Ir a Horarios y generar calendario &rarr;</a>
+</div>
+
+<div class="space-y-4">
+{% for j in jornadas %}
+  <div class="card-hover bg-white rounded-xl shadow-card border border-gray-100 p-6 flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <h3 class="font-display text-xl font-bold text-navy">Jornada {{ j.numero }}
+        <span class="text-xs font-bold px-2.5 py-1 rounded-full ml-2 {{ 'badge-green' if j.estado == 'publicada' else 'badge-yellow' }}">{{ j.estado }}</span>
+      </h3>
+      <p class="text-sm text-gray-500 mt-1">{{ j.partidos|length }} partido(s)</p>
+    </div>
+    <a href="{{ url_for('admin.jornada_detalle', jornada_id=j.id) }}" class="bg-navy hover:bg-navy-light text-white font-bold px-5 py-2.5 rounded-lg transition-all text-sm">Gestionar</a>
+  </div>
+{% else %}
+  <p class="text-gray-500">Aún no hay jornadas. Crea la primera arriba.</p>
+{% endfor %}
+</div>
+{% endblock %}

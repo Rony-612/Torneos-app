@@ -1,0 +1,55 @@
+{% extends "capitan/base.html" %}
+{% block title %}Líder de goleo{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Líder de goleo</h1>
+<p class="text-gray-600 mb-8">Los goleadores del torneo hasta ahora.</p>
+
+{% if tabla|length >= 1 %}
+<div class="podium mb-10">
+  {% if tabla|length >= 2 %}
+    <div class="podium-slot second">
+      <div class="medal">🥈</div>
+      <p class="font-display font-bold text-navy text-sm text-center">{{ tabla[1].jugador.nombre }}</p>
+      <div class="podium-bar">{{ tabla[1].goles }}</div>
+    </div>
+  {% endif %}
+  <div class="podium-slot first">
+    <div class="medal">🥇</div>
+    <p class="font-display font-bold text-navy text-center">{{ tabla[0].jugador.nombre }}</p>
+    <div class="podium-bar">{{ tabla[0].goles }}</div>
+  </div>
+  {% if tabla|length >= 3 %}
+    <div class="podium-slot third">
+      <div class="medal">🥉</div>
+      <p class="font-display font-bold text-navy text-sm text-center">{{ tabla[2].jugador.nombre }}</p>
+      <div class="podium-bar">{{ tabla[2].goles }}</div>
+    </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gradient-to-r from-navy to-navy-light text-white">
+        <th class="py-3 px-5 text-left font-bold">#</th>
+        <th class="py-3 px-5 text-left font-bold">Jugador</th>
+        <th class="py-3 px-5 text-left font-bold">Equipo</th>
+        <th class="py-3 px-5 text-center font-bold">Goles</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for g in tabla %}
+        <tr class="hover:bg-gray-50/70">
+          <td class="py-3 px-5 text-gray-400 font-bold">{{ loop.index }}</td>
+          <td class="py-3 px-5 font-semibold text-navy">{{ g.jugador.nombre }}</td>
+          <td class="py-3 px-5 text-gray-600">{{ g.jugador.rosters[0].equipo.nombre if g.jugador.rosters else '' }}</td>
+          <td class="py-3 px-5 text-center font-bold text-navy">{{ g.goles }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="py-8 text-center text-gray-400">Aún no hay goles registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "capitan/base.html" %}
+{% block title %}Mi grupo{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Mi grupo{% if grupo %} — Grupo {{ grupo.nombre }}{% endif %}</h1>
+<p class="text-gray-600 mb-8">Tabla de posiciones actualizada.</p>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gradient-to-r from-navy to-navy-light text-white">
+        <th class="py-3 px-4 text-left font-bold">Equipo</th>
+        <th class="py-3 px-3 text-center font-bold">PJ</th>
+        <th class="py-3 px-3 text-center font-bold">PG</th>
+        <th class="py-3 px-3 text-center font-bold">PE</th>
+        <th class="py-3 px-3 text-center font-bold">PP</th>
+        <th class="py-3 px-3 text-center font-bold">GF</th>
+        <th class="py-3 px-3 text-center font-bold">GC</th>
+        <th class="py-3 px-3 text-center font-bold">DG</th>
+        <th class="py-3 px-4 text-center font-bold">Pts</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for f in tabla %}
+        <tr class="{{ 'bg-gold-pale' if f.equipo.id == mi_equipo_id else 'hover:bg-gray-50/70' }}">
+          <td class="py-3 px-4 font-semibold text-navy">
+            {{ f.equipo.nombre }}
+            {% if f.equipo.id == mi_equipo_id %}<span class="badge-gold text-[10px] font-bold px-2 py-0.5 rounded-full ml-2">TU EQUIPO</span>{% endif %}
+          </td>
+          <td class="py-3 px-3 text-center text-gray-600">{{ f.pj }}</td>
+          <td class="py-3 px-3 text-center text-gray-600">{{ f.pg }}</td>
+          <td class="py-3 px-3 text-center text-gray-600">{{ f.pe }}</td>
+          <td class="py-3 px-3 text-center text-gray-600">{{ f.pp }}</td>
+          <td class="py-3 px-3 text-center text-gray-600">{{ f.gf }}</td>
+          <td class="py-3 px-3 text-center text-gray-600">{{ f.gc }}</td>
+          <td class="py-3 px-3 text-center text-gray-600">{{ f.dg }}</td>
+          <td class="py-3 px-4 text-center font-bold text-navy">{{ f.pts }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="9" class="py-8 text-center text-gray-400">Grupo no configurado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

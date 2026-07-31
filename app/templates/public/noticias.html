@@ -1,0 +1,15 @@
+{% extends "public/base.html" %}
+{% block title %}Noticias{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-8">Noticias</h1>
+<div class="space-y-4">
+  {% for n in noticias %}
+    <a href="{{ url_for('public.noticia_detalle', noticia_id=n.id) }}" class="card-hover block bg-white rounded-xl shadow-card border border-gray-100 p-7">
+      <h3 class="font-display text-lg font-bold text-navy">{{ n.titulo }}</h3>
+      <p class="text-xs text-gray-500 mt-1">{{ n.fecha_publicacion.strftime('%d/%m/%Y') }}</p>
+    </a>
+  {% else %}
+    <p class="text-gray-400">Sin noticias publicadas.</p>
+  {% endfor %}
+</div>
+{% endblock %}

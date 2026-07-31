@@ -1,0 +1,95 @@
+{# Tabla-calendario de una jornada, estilo "JORNADA X (del ... al ...)".
+   modo:
+     'ver'         -> solo muestra los partidos (clic va al detalle si esta jugado)
+     'seleccionar' -> celdas vacias se vuelven checkboxes seleccionables (name="slot")
+     'elegir'      -> solo las celdas que esten en opciones_dict se vuelven radio (name="opcion_id")
+#}
+{% macro tabla_jornada(jornada, grid, modo='ver', opciones_dict=None, link_endpoint=None) %}
+{% set opciones_dict = opciones_dict or {} %}
+<div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+  <div class="bg-black text-white text-center py-2.5 font-display font-bold uppercase tracking-wide text-sm">
+    Jornada {{ jornada.numero }}
+    {% if grid.dias %} (del {{ grid.dias[0][1].day }} al {{ grid.dias[-1][1].day }} de {{ grid.dias[0][1].strftime('%B') }}) {% endif %}
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr>
+          {% for dia_label, fecha in grid.dias %}
+            <th colspan="2" class="bg-gradient-to-r from-navy to-navy-light text-white py-2.5 px-3 text-center font-bold uppercase text-xs sm:text-sm border border-navy-light">
+              {{ fecha.day }} {{ dia_label }}
+            </th>
+          {% endfor %}
+        </tr>
+        <tr>
+          {% for dia_label, fecha in grid.dias %}
+            <th class="bg-gold-pale text-navy py-2 px-2 font-bold text-xs border border-gray-200 w-24">Horario</th>
+            <th class="bg-gray-50 text-navy py-2 px-2 font-bold text-xs border border-gray-200">Juego</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for hora_ini, hora_f in grid.horas %}
+          <tr>
+            {% for dia_label, fecha in grid.dias %}
+              {% set partido = grid.celdas.get((dia_label, hora_ini)) %}
+              <td class="bg-gold-pale text-navy font-bold text-center py-3 px-2 border border-gray-200 text-xs whitespace-nowrap">{{ hora_ini }}-{{ hora_f }}</td>
+              <td class="py-2 px-2 border border-gray-200 text-center align-middle">
+                {% if partido %}
+                  {% if link_endpoint %}
+                    <a href="{{ url_for(link_endpoint, partido_id=partido.id) }}" class="text-xs sm:text-sm font-semibold text-navy hover:text-gold-dark">
+                      {{ partido.equipo_local.nombre }}
+                      {% if partido.estado == 'jugado' %}
+                        <span class="text-navy">{{ partido.resultado_local }}-{{ partido.resultado_visitante }}</span>
+                      {% else %}
+                        <span class="text-red-600 font-extrabold">VS</span>
+                      {% endif %}
+                      {{ partido.equipo_visitante.nombre }}
+                    </a>
+                  {% else %}
+                    <span class="text-xs sm:text-sm font-semibold text-navy">
+                      {{ partido.equipo_local.nombre }}
+                      {% if partido.estado == 'jugado' %}
+                        <span class="text-navy">{{ partido.resultado_local }}-{{ partido.resultado_visitante }}</span>
+                      {% else %}
+                        <span class="text-red-600 font-extrabold">VS</span>
+                      {% endif %}
+                      {{ partido.equipo_visitante.nombre }}
+                    </span>
+                  {% endif %}
+                  {% if partido.estado == 'suspendido' %}
+                    <span class="block mt-1 badge-red text-[10px] font-bold px-2 py-0.5 rounded-full inline-block">SUSPENDIDO</span>
+                  {% elif partido.estado == 'reprogramado' %}
+                    <span class="block mt-1 badge-yellow text-[10px] font-bold px-2 py-0.5 rounded-full inline-block">REPROGRAMADO</span>
+                  {% endif %}
+                {% elif modo == 'seleccionar' %}
+                  {% set slot_key = dia_label ~ '|' ~ hora_ini %}
+                  {% set cell_id = 'slot-' ~ dia_label ~ '-' ~ hora_ini %}
+                  <input type="checkbox" id="{{ cell_id }}" name="slot" value="{{ slot_key }}" class="hidden peer">
+                  <label for="{{ cell_id }}" class="block w-full py-2 rounded-md border-2 border-dashed border-gray-300 text-gray-400 text-xs font-bold cursor-pointer peer-checked:bg-gold peer-checked:border-gold-dark peer-checked:text-navy hover:border-gold transition-colors">
+                    Disponible
+                  </label>
+                {% elif modo == 'elegir' and opciones_dict.get((dia_label, hora_ini)) %}
+                  {% set opcion = opciones_dict[(dia_label, hora_ini)] %}
+                  <label class="flex items-center justify-center gap-2 w-full py-2 rounded-md border-2 border-gold bg-gold-pale text-navy text-xs font-bold cursor-pointer">
+                    <input type="radio" name="opcion_id" value="{{ opcion.id }}" class="w-4 h-4">
+                    Propuesto
+                  </label>
+                {% else %}
+                  <span class="text-gray-300 text-xs">—</span>
+                {% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if grid.otros %}
+    <div class="p-4 text-xs text-gray-500 border-t border-gray-100">
+      Otros partidos fuera del horario habitual:
+      {% for p in grid.otros %}{{ p.equipo_local.nombre }} vs {{ p.equipo_visitante.nombre }} ({{ p.fecha.strftime('%d/%m') }} {{ p.hora.strftime('%H:%M') }}){{ ", " if not loop.last }}{% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endmacro %}

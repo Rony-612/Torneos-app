@@ -1,0 +1,25 @@
+{% extends "capitan/base.html" %}
+{% block title %}Arbitrajes{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Arbitrajes</h1>
+<p class="text-gray-600 mb-8">Costo de arbitraje por partido de {{ equipo.nombre }}. El pago lo confirma la organización.</p>
+
+<div class="space-y-4">
+  {% for p in partidos %}
+    {% set pagado = p.arbitraje_pagado_de(equipo.id) %}
+    <div class="bg-white rounded-xl shadow-card border border-gray-100 p-6 flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <p class="font-semibold text-navy">{{ p.equipo_local.nombre }} vs {{ p.equipo_visitante.nombre }}</p>
+        <p class="text-sm text-gray-500 mt-1">{{ p.fecha.strftime('%d/%m/%Y') }} · ${{ p.costo_arbitraje }} MXN</p>
+      </div>
+      {% if pagado %}
+        <span class="badge-green text-xs font-bold px-3 py-1.5 rounded-full">✅ Pagado</span>
+      {% else %}
+        <span class="badge-red text-xs font-bold px-3 py-1.5 rounded-full">⏳ Pendiente de pago</span>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="text-gray-500">Sin partidos registrados.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "admin/base.html" %}
+{% block title %}Horarios{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Horarios y disponibilidad</h1>
+<p class="text-gray-600 mb-6">Esta es la disponibilidad que cada capitán registró para la semana seleccionada.</p>
+
+<div class="flex items-center justify-between mb-8 bg-white rounded-xl shadow-card border border-gray-100 p-4">
+  <a href="{{ url_for('admin.horarios', semana=semana_anterior.isoformat()) }}" class="text-sm font-bold text-navy hover:text-gold">&larr; Semana anterior</a>
+  <p class="font-display font-bold text-navy">Semana del {{ semana.strftime('%d/%m/%Y') }}</p>
+  <a href="{{ url_for('admin.horarios', semana=semana_siguiente.isoformat()) }}" class="text-sm font-bold text-navy hover:text-gold">Semana siguiente &rarr;</a>
+</div>
+
+<div class="bg-gradient-to-r from-navy to-navy-light rounded-xl shadow-elevation p-7 mb-8 text-white">
+  <p class="font-display text-xl font-bold">Generar jornada de esta semana automáticamente</p>
+  <p class="text-sm opacity-90 mt-1 max-w-2xl">
+    El sistema arma todos los partidos pendientes de cada grupo para una ronda completa,
+    repartidos entre los días de la semana donde ambos capitanes coinciden en disponibilidad
+    y sin encimar canchas. Si algún cruce no tiene coincidencia de horario, se agrega igual
+    con una nota para que lo ajustes. La jornada se crea en <strong>borrador</strong>: puedes
+    editar equipos, fecha, hora, cancha y árbitro de cualquier partido antes de publicarla.
+  </p>
+  <form method="POST" action="{{ url_for('admin.generar_calendario') }}" class="mt-5">
+    <input type="hidden" name="semana" value="{{ semana.isoformat() }}">
+    <button type="submit" class="bg-gold hover:bg-gold-dark text-navy font-bold px-6 py-3 rounded-lg transition-all shadow-lg">
+      ⚡ Generar jornada de esta semana
+    </button>
+  </form>
+</div>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gradient-to-r from-navy to-navy-light text-white">
+        <th class="py-3 px-5 text-left font-bold">Equipo</th>
+        <th class="py-3 px-5 text-left font-bold">Disponibilidad esta semana</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for e in equipos %}
+        <tr class="hover:bg-gray-50/70">
+          <td class="py-4 px-5 font-semibold text-navy align-top">{{ e.nombre }}</td>
+          <td class="py-4 px-5">
+            {% set disp = disponibilidad_por_equipo[e.id] %}
+            {% if disp %}
+              <div class="flex flex-wrap gap-2">
+                {% for d in disp|sort(attribute='hora_inicio') %}
+                  <span class="badge-blue text-xs font-bold px-2.5 py-1 rounded-full capitalize">
+                    {{ d.dia_semana }} {{ d.hora_inicio.strftime('%H:%M') }}–{{ d.hora_fin.strftime('%H:%M') }}
+                  </span>
+                {% endfor %}
+              </div>
+            {% else %}
+              <span class="text-gray-400 text-xs">Sin disponibilidad registrada esta semana</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

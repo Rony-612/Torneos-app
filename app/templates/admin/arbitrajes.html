@@ -1,0 +1,60 @@
+{% extends "admin/base.html" %}
+{% block title %}Arbitrajes{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Arbitrajes</h1>
+<p class="text-gray-600 mb-8">Da seguimiento al pago de arbitraje por partido.</p>
+
+<div class="grid sm:grid-cols-2 gap-5 mb-8">
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-6">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">Pagos requeridos (2 por partido)</p>
+    <p class="font-display text-3xl font-bold text-navy mt-2">{{ total }}</p>
+  </div>
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-6">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">Pagos completados</p>
+    <p class="font-display text-3xl font-bold text-green-600 mt-2">{{ pagados }} / {{ total }}</p>
+  </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+  <label class="block text-sm font-bold text-navy mb-3">Selecciona un equipo</label>
+  <form method="GET" class="mb-6">
+    <select name="equipo_id" onchange="this.form.submit()" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+      <option value="">-- Elige un equipo --</option>
+      {% for e in equipos %}
+        <option value="{{ e.id }}" {% if equipo_id == e.id %}selected{% endif %}>{{ e.nombre }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% if partidos %}
+    <div class="space-y-3">
+      {% for p in partidos %}
+        <div class="rounded-lg border border-gray-200 p-4">
+          <p class="font-semibold text-navy">{{ p.equipo_local.nombre }} vs {{ p.equipo_visitante.nombre }}</p>
+          <p class="text-xs text-gray-500 mt-1 mb-3">{{ p.fecha.strftime('%d/%m/%Y') }} · Árbitro: {{ p.arbitro.nombre if p.arbitro else 'sin asignar' }}</p>
+          <form method="POST" action="{{ url_for('admin.actualizar_arbitraje', partido_id=p.id) }}" class="flex items-center gap-4 flex-wrap">
+            <input type="hidden" name="equipo_id" value="{{ equipo_id }}">
+            <div class="flex items-center gap-1">
+              <span class="text-sm text-gray-500">$</span>
+              <input type="number" name="costo" value="{{ p.costo_arbitraje }}" class="w-20 px-2 py-1.5 border-2 border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none">
+            </div>
+            <label class="flex items-center gap-2 text-sm font-semibold px-3 py-1.5 rounded-lg {{ 'bg-green-50' if p.arbitraje_pagado_local else 'bg-red-50' }}">
+              <input type="checkbox" name="pagado_local" {% if p.arbitraje_pagado_local %}checked{% endif %} class="w-5 h-5">
+              {{ p.equipo_local.nombre }}
+            </label>
+            <label class="flex items-center gap-2 text-sm font-semibold px-3 py-1.5 rounded-lg {{ 'bg-green-50' if p.arbitraje_pagado_visitante else 'bg-red-50' }}">
+              <input type="checkbox" name="pagado_visitante" {% if p.arbitraje_pagado_visitante %}checked{% endif %} class="w-5 h-5">
+              {{ p.equipo_visitante.nombre }}
+            </label>
+            <button type="submit" class="bg-navy hover:bg-navy-light text-white font-bold px-4 py-1.5 rounded-lg text-sm">Guardar</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  {% elif equipo_id %}
+    <p class="text-gray-500 text-center py-8">Este equipo no tiene partidos.</p>
+  {% else %}
+    <p class="text-gray-500 text-center py-12 text-lg">👆 Selecciona un equipo para ver sus arbitrajes</p>
+  {% endif %}
+</div>
+{% endblock %}

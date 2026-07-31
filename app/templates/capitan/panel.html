@@ -1,0 +1,108 @@
+{% extends "capitan/base.html" %}
+{% block title %}Inicio{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-1">{{ equipo.nombre }}</h1>
+<p class="text-gray-500 mb-8">Bienvenido, capitán.</p>
+
+<div class="grid sm:grid-cols-3 gap-5 mb-8">
+  <div class="card-hover bg-white rounded-xl shadow-card border border-gray-100 p-6">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">⚽ Próximo partido</p>
+    {% if proximo %}
+      <p class="font-display font-bold text-navy mt-3">vs {{ proximo.equipo_visitante.nombre if proximo.equipo_local_id == equipo.id else proximo.equipo_local.nombre }}</p>
+      <p class="text-sm text-gray-500 mt-1">{{ proximo.fecha.strftime('%d/%m/%Y') }} {{ proximo.hora.strftime('%H:%M') }}</p>
+    {% else %}
+      <p class="text-gray-400 mt-3 text-sm">Sin partidos programados</p>
+    {% endif %}
+  </div>
+  <div class="card-hover bg-white rounded-xl shadow-card border border-gray-100 p-6">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">🏆 Posición en el grupo</p>
+    {% if posicion %}
+      <p class="font-display text-3xl font-bold text-navy mt-2">#{{ posicion }}</p>
+      <p class="text-sm text-gray-500 mt-1">{{ pts }} puntos</p>
+    {% else %}
+      <p class="text-gray-400 mt-3 text-sm">Aún sin partidos jugados</p>
+    {% endif %}
+  </div>
+  <div class="card-hover bg-white rounded-xl shadow-card border border-gray-100 p-6">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">🗓️ Disponibilidad registrada</p>
+    <p class="font-display text-3xl font-bold text-navy mt-2">{{ disp_count }}</p>
+    <a href="{{ url_for('capitan.disponibilidad') }}" class="text-xs font-bold text-gold-dark hover:text-navy mt-1 inline-block">Editar &rarr;</a>
+  </div>
+</div>
+
+{% if pendientes_pago %}
+<div class="bg-gradient-to-r from-red-50 to-white border-2 border-red-200 rounded-xl p-6 mb-8">
+  <p class="font-bold text-red-700">⚠️ Arbitraje pendiente de pago en {{ pendientes_pago|length }} partido(s)</p>
+  <a href="{{ url_for('capitan.arbitrajes') }}" class="text-sm font-bold text-navy hover:text-gold mt-2 inline-block">Ver estatus &rarr;</a>
+</div>
+{% endif %}
+
+{% if avisos %}
+<div class="bg-gradient-to-r from-gold-pale to-white border-2 border-gold-light rounded-xl p-6 mb-8">
+  <p class="font-bold text-navy">🔑 Objetos perdidos recientes</p>
+  {% for a in avisos %}
+    <p class="text-sm text-gray-600 mt-1">{{ a.titulo }}{% if a.ubicacion %} — {{ a.ubicacion }}{% endif %}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h3 class="font-display text-2xl font-bold text-navy mb-4">Próximos partidos</h3>
+<div class="space-y-5">
+{% for p in proximos %}
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-6">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <p class="font-display font-bold text-lg text-navy">{{ p.equipo_local.nombre }} vs {{ p.equipo_visitante.nombre }}</p>
+        <p class="text-sm text-gray-500 mt-1">{{ p.fecha.strftime('%d/%m/%Y') }} {{ p.hora.strftime('%H:%M') }}{% if p.cancha %} · {{ p.cancha.nombre }}{% endif %}</p>
+      </div>
+      <span class="badge-blue text-xs font-bold px-3 py-1 rounded-full">{{ p.estado }}</span>
+    </div>
+
+    {% set detalle = p.detalle_de(equipo.id) %}
+    {% set rival = p.equipo_visitante if p.equipo_local_id == equipo.id else p.equipo_local %}
+    {% set detalle_rival = p.detalle_de(rival.id) %}
+    <details class="mt-4">
+      <summary class="text-sm font-bold text-navy cursor-pointer">Detalles del partido (uniforme)</summary>
+
+      {% if detalle_rival and (detalle_rival.color_uniforme or detalle_rival.lleva_casacas is not none) %}
+        <div class="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700">
+          <span class="font-bold text-navy">{{ rival.nombre }}</span> jugará de
+          <strong>{{ detalle_rival.color_uniforme or 'sin definir' }}</strong>
+          {% if detalle_rival.lleva_casacas is not none %} · {{ 'con casacas numeradas' if detalle_rival.lleva_casacas else 'sin casacas' }}{% endif %}
+        </div>
+      {% else %}
+        <p class="mt-3 text-xs text-gray-400">{{ rival.nombre }} aún no registró su uniforme.</p>
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('capitan.guardar_detalles_partido', partido_id=p.id) }}" class="grid sm:grid-cols-2 gap-4 mt-3">
+        <div class="sm:col-span-2">
+          <p class="text-xs font-bold text-gray-500 mb-1">Tu uniforme ({{ equipo.nombre }})</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">Color de uniforme</label>
+          <input type="text" name="color_uniforme" value="{{ detalle.color_uniforme if detalle else '' }}" placeholder="Ej. Azul / blanco" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">¿Llevarán casacas numeradas?</label>
+          <select name="lleva_casacas" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none">
+            <option value="si" {% if detalle and detalle.lleva_casacas %}selected{% endif %}>Sí</option>
+            <option value="no" {% if detalle and not detalle.lleva_casacas %}selected{% endif %}>No</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <button type="submit" class="bg-navy hover:bg-navy-light text-white font-bold px-4 py-2 rounded-lg text-sm">Guardar detalles</button>
+        </div>
+      </form>
+    </details>
+
+    <div class="mt-4 border-t border-gray-100 pt-4">
+      <a href="{{ url_for('capitan.solicitar_cambio', partido_id=p.id) }}" class="inline-block bg-gold hover:bg-gold-dark text-navy font-bold px-4 py-2 rounded-lg text-sm">
+        ¿Necesitas mover este partido? Elige otro horario disponible &rarr;
+      </a>
+    </div>
+  </div>
+{% else %}
+  <p class="text-gray-500">Sin partidos próximos publicados.</p>
+{% endfor %}
+</div>
+{% endblock %}

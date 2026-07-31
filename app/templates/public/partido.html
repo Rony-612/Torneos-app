@@ -1,0 +1,50 @@
+{% extends "public/base.html" %}
+{% block title %}{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}{% endblock %}
+{% block content %}
+<div class="bg-gradient-to-r from-navy to-navy-light rounded-xl shadow-elevation p-8 text-white mb-6">
+  <h1 class="font-display text-2xl sm:text-3xl font-bold">
+    {{ partido.equipo_local.nombre }} {{ partido.resultado_local if partido.resultado_local is not none else '' }}
+    - {{ partido.resultado_visitante if partido.resultado_visitante is not none else '' }} {{ partido.equipo_visitante.nombre }}
+  </h1>
+  <p class="opacity-90 mt-2 text-sm">
+    {{ partido.fecha.strftime('%d/%m/%Y') }} {{ partido.hora.strftime('%H:%M') }}
+    {% if partido.cancha %} &middot; {{ partido.cancha.nombre }}{% endif %}
+    {% if partido.arbitro %} &middot; Árbitro: {{ partido.arbitro.nombre }}{% endif %}
+  </p>
+  <span class="inline-block mt-3 text-xs font-bold px-3 py-1 rounded-full badge-gold">{{ partido.estado }}</span>
+</div>
+
+<div class="grid sm:grid-cols-2 gap-6">
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+    <h3 class="font-display text-lg font-bold text-navy mb-4">⚽ Goleadores</h3>
+    {% set goles = partido.goleadores() %}
+    {% if goles %}
+      <ul class="space-y-2">
+        {% for g in goles %}
+          <li class="text-sm text-gray-700">
+            <span class="font-semibold text-navy">{{ g.jugador.nombre }}</span> ({{ g.equipo.nombre if g.equipo }}){% if g.minuto %} — min {{ g.minuto }}{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-gray-400 text-sm">Sin goles registrados.</p>
+    {% endif %}
+  </div>
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+    <h3 class="font-display text-lg font-bold text-navy mb-4">🟨 Tarjetas</h3>
+    {% set tarjetas = partido.tarjetas() %}
+    {% if tarjetas %}
+      <ul class="space-y-2">
+        {% for t in tarjetas %}
+          <li class="text-sm text-gray-700">
+            <span class="font-semibold text-navy">{{ t.jugador.nombre }}</span> —
+            {{ 'Amarilla' if t.tipo_evento == 'tarjeta_amarilla' else 'Roja' }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-gray-400 text-sm">Sin tarjetas registradas.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

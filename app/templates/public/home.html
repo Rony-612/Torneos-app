@@ -1,0 +1,81 @@
+{% extends "public/base.html" %}
+{% block title %}Inicio{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl sm:text-4xl font-bold text-navy mb-1">{{ torneo.nombre if torneo else 'Torneo' }}</h1>
+{% if jornada_actual %}
+  <p class="text-gray-500 mb-8">Jornada actual: {{ jornada_actual.numero }}</p>
+{% else %}
+  <p class="text-gray-500 mb-8">&nbsp;</p>
+{% endif %}
+
+<div class="grid lg:grid-cols-2 gap-6 mb-8">
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+    <h2 class="font-display text-xl font-bold text-navy mb-5">⚽ Próximos partidos</h2>
+    {% if proximos %}
+      <div class="space-y-3">
+        {% for p in proximos %}
+          <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
+            <span class="font-semibold text-navy text-sm">{{ p.equipo_local.nombre }} vs {{ p.equipo_visitante.nombre }}</span>
+            <span class="text-xs text-gray-500 font-semibold">{{ p.fecha.strftime('%d/%m') }} {{ p.hora.strftime('%H:%M') }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-400 text-sm">Sin partidos programados por el momento.</p>
+    {% endif %}
+  </div>
+
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+    <h2 class="font-display text-xl font-bold text-navy mb-5">🏁 Últimos resultados</h2>
+    {% if ultimos %}
+      <div class="space-y-3">
+        {% for p in ultimos %}
+          <a href="{{ url_for('public.partido_detalle', partido_id=p.id) }}" class="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 hover:border-gold transition-colors">
+            <span class="font-semibold text-navy text-sm">{{ p.equipo_local.nombre }} {{ p.resultado_local }} - {{ p.resultado_visitante }} {{ p.equipo_visitante.nombre }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-400 text-sm">Aún no hay resultados.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-6">
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+    <h2 class="font-display text-xl font-bold text-navy mb-5">🥇 Tabla de goleadores</h2>
+    {% if goleadores %}
+      <table class="w-full text-sm">
+        <tbody class="divide-y divide-gray-100">
+          {% for g in goleadores %}
+            <tr>
+              <td class="py-2.5 font-semibold text-navy">
+                <a href="{{ url_for('public.jugador_detalle', jugador_id=g.jugador.id) }}" class="hover:text-gold-dark">{{ g.jugador.nombre }}</a>
+              </td>
+              <td class="py-2.5 text-right font-bold text-navy">{{ g.goles }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <a href="{{ url_for('public.goleadores') }}" class="inline-block mt-4 text-sm font-bold text-gold-dark hover:text-navy">Ver tabla completa &rarr;</a>
+    {% else %}
+      <p class="text-gray-400 text-sm">Aún no hay goles registrados.</p>
+    {% endif %}
+  </div>
+
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+    <h2 class="font-display text-xl font-bold text-navy mb-5">📰 Noticias</h2>
+    {% if noticias %}
+      <div class="space-y-3">
+        {% for n in noticias %}
+          <a href="{{ url_for('public.noticia_detalle', noticia_id=n.id) }}" class="block p-3 rounded-lg bg-gray-50 border border-gray-100 hover:border-gold transition-colors">
+            <span class="font-semibold text-navy text-sm">{{ n.titulo }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-400 text-sm">Sin noticias publicadas.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

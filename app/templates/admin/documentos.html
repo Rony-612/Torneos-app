@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% block title %}Documentos{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Control de documentación</h1>
+<p class="text-gray-600 mb-8">Actualiza inscripción y seguro de jugadores por equipo.</p>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+  <label class="block text-sm font-bold text-navy mb-3">Selecciona un equipo</label>
+  <form method="GET" class="mb-6">
+    <select name="equipo_id" onchange="this.form.submit()" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+      <option value="">-- Elige un equipo --</option>
+      {% for e in equipos %}
+        <option value="{{ e.id }}" {% if equipo_id == e.id %}selected{% endif %}>{{ e.nombre }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% if rosters %}
+    <div class="overflow-hidden rounded-lg border border-gray-200">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-gradient-to-r from-navy to-navy-light text-white">
+            <th class="py-3 px-4 text-left font-bold">#</th>
+            <th class="py-3 px-4 text-left font-bold">Jugador</th>
+            <th class="py-3 px-4 text-center font-bold">Inscripción</th>
+            <th class="py-3 px-4 text-center font-bold">Seguro</th>
+            <th class="py-3 px-4 text-center font-bold">Estado</th>
+            <th class="py-3 px-4 text-center font-bold">Guardar</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for r in rosters %}
+            <tr class="{{ 'hover:bg-green-50/40' if r.documentacion_completa() else 'hover:bg-yellow-50/40 bg-yellow-50/20' }}">
+              <td class="py-3 px-4 text-gray-400 font-bold">{{ loop.index }}</td>
+              <td class="py-3 px-4 font-semibold text-navy">{{ r.jugador.nombre }}</td>
+              <td class="py-3 px-4 text-center">
+                <form id="doc-form-{{ r.id }}" method="POST" action="{{ url_for('admin.actualizar_documentos', roster_id=r.id) }}"></form>
+                <input type="checkbox" name="inscripcion" form="doc-form-{{ r.id }}" {% if r.inscripcion_pagada %}checked{% endif %} class="w-5 h-5">
+              </td>
+              <td class="py-3 px-4 text-center">
+                <input type="checkbox" name="seguro" form="doc-form-{{ r.id }}" {% if r.seguro_pagado %}checked{% endif %} class="w-5 h-5">
+              </td>
+              <td class="py-3 px-4 text-center">
+                {% if r.documentacion_completa() %}
+                  <span class="badge-green text-xs font-bold px-2.5 py-1 rounded-full">🟢 Habilitado</span>
+                {% else %}
+                  <span class="badge-yellow text-xs font-bold px-2.5 py-1 rounded-full">🟡 Incompleto</span>
+                {% endif %}
+              </td>
+              <td class="py-3 px-4 text-center">
+                <button type="submit" form="doc-form-{{ r.id }}" class="text-xs font-bold text-gold-dark hover:text-navy">Guardar</button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% elif equipo_id %}
+    <p class="text-gray-500 text-center py-8">Este equipo no tiene jugadores registrados.</p>
+  {% else %}
+    <p class="text-gray-500 text-center py-12 text-lg">👆 Selecciona un equipo para ver sus jugadores</p>
+  {% endif %}
+</div>
+{% endblock %}

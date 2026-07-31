@@ -1,0 +1,33 @@
+{% extends "public/base.html" %}
+{% block title %}Tabla disciplinaria{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Tabla disciplinaria</h1>
+<p class="text-gray-500 mb-8">Tarjetas acumuladas por jugador.</p>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gradient-to-r from-navy to-navy-light text-white">
+        <th class="py-3 px-5 text-left font-bold">Jugador</th>
+        <th class="py-3 px-5 text-left font-bold">Equipo</th>
+        <th class="py-3 px-5 text-center font-bold">🟨 Amarillas</th>
+        <th class="py-3 px-5 text-center font-bold">🟥 Rojas</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for d in tabla %}
+        <tr class="hover:bg-gray-50/70">
+          <td class="py-3 px-5 font-semibold text-navy">
+            <a href="{{ url_for('public.jugador_detalle', jugador_id=d.jugador.id) }}" class="hover:text-gold-dark">{{ d.jugador.nombre }}</a>
+          </td>
+          <td class="py-3 px-5 text-gray-600">{{ d.jugador.rosters[0].equipo.nombre if d.jugador.rosters else '' }}</td>
+          <td class="py-3 px-5 text-center font-bold text-navy">{{ d.amarillas }}</td>
+          <td class="py-3 px-5 text-center font-bold text-navy">{{ d.rojas }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="py-8 text-center text-gray-400">Sin sanciones registradas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

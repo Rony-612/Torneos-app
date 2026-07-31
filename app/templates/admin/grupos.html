@@ -1,0 +1,54 @@
+{% extends "admin/base.html" %}
+{% block title %}Grupos{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Gestión de grupos</h1>
+<p class="text-gray-600 mb-8">Asigna equipos a cada grupo del torneo.</p>
+
+<div class="grid lg:grid-cols-2 gap-8">
+  {% for g in grupos %}
+    <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-2 h-8 bg-gradient-to-r from-navy to-navy-light rounded-full"></div>
+        <h3 class="font-display text-2xl font-bold text-navy">Grupo {{ g.nombre }}</h3>
+      </div>
+      <div class="space-y-3 mb-5">
+        {% for fila in g.tabla_posiciones() %}
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div>
+              <p class="font-semibold text-navy">{{ fila.equipo.nombre }}</p>
+              <p class="text-xs text-gray-500 mt-1">{{ fila.pts }} puntos · {{ fila.pj }} PJ</p>
+            </div>
+            {% for i in g.inscripciones %}
+              {% if i.equipo_id == fila.equipo.id and i.estado == 'activo' %}
+                <form method="POST" action="{{ url_for('admin.quitar_de_grupo', inscripcion_id=i.id) }}" onsubmit="return confirm('¿Quitar del grupo?');">
+                  <button type="submit" class="text-red-600 hover:text-red-800 text-xs font-bold">Quitar</button>
+                </form>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-gray-400 text-sm">Sin equipos asignados.</p>
+        {% endfor %}
+      </div>
+      {% if equipos_sin_grupo %}
+        <form method="POST" action="{{ url_for('admin.agregar_equipo_a_grupo', grupo_id=g.id) }}" class="flex gap-2">
+          <select name="equipo_id" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none text-sm">
+            {% for e in equipos_sin_grupo %}<option value="{{ e.id }}">{{ e.nombre }}</option>{% endfor %}
+          </select>
+          <button type="submit" class="bg-navy hover:bg-navy-light text-white font-bold px-4 py-2 rounded-lg text-sm">Agregar</button>
+        </form>
+      {% else %}
+        <p class="text-xs text-gray-400 italic">No hay equipos sin grupo por agregar.</p>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="text-gray-500">No hay grupos configurados todavía.</p>
+  {% endfor %}
+</div>
+
+{% if equipos_sin_grupo %}
+<div class="mt-8 bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+  <p class="text-sm font-semibold text-blue-900">ℹ️ Equipos sin grupo asignado: {{ equipos_sin_grupo|map(attribute='nombre')|join(', ') }}</p>
+</div>
+{% endif %}
+{% endblock %}

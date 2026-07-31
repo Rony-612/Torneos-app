@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión · Organizador</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { navy: { DEFAULT: '#002F6C', dark: '#001C42', light: '#0A4A9E' }, gold: { DEFAULT: '#FFC400', dark: '#E6A800' } },
+    fontFamily: { display: ['Plus Jakarta Sans', 'sans-serif'], sans: ['Inter', 'sans-serif'] },
+  } } }
+</script>
+<style>body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#FAFAFA 0%,#F5F5F5 100%);}
+.font-display{font-family:'Plus Jakarta Sans',sans-serif;}</style>
+</head>
+<body class="min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-sm">
+    <div class="flex items-center gap-3 justify-center mb-8">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-navy to-navy-light flex items-center justify-center shadow-lg">
+        <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+          <path d="M20 4 L32 12 V28 C32 34 28 37 20 38 C12 37 8 34 8 28 V12 Z" stroke="#FFC400" stroke-width="2" fill="none"/>
+          <circle cx="20" cy="20" r="6" fill="#FFC400"/>
+        </svg>
+      </div>
+      <p class="font-display font-bold text-navy text-xl">Torneo DCEA</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+      <p class="text-xs uppercase tracking-widest text-gray-500 font-bold mb-1">Panel de</p>
+      <h1 class="font-display text-2xl font-bold text-navy mb-6">Organización</h1>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="mb-4 rounded-lg px-4 py-3 text-sm font-semibold bg-red-50 text-red-700 border border-red-200">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+      <form method="POST" class="space-y-4">
+        <div>
+          <label class="block text-sm font-bold text-navy mb-2">Correo electrónico</label>
+          <input type="email" name="email" required class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-navy mb-2">Contraseña</label>
+          <input type="password" name="password" required class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+        </div>
+        <button type="submit" class="w-full bg-gradient-to-r from-navy to-navy-light hover:shadow-lg text-white font-bold py-3 rounded-lg transition-all">Entrar</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block title %}Pagos de cancha{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Pagos de cancha</h1>
+<p class="text-gray-600 mb-8">Cada equipo debe cubrir 4 pagos de renta de cancha durante la temporada.</p>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gradient-to-r from-navy to-navy-light text-white">
+        <th class="py-3 px-4 text-left font-bold">Equipo</th>
+        <th class="py-3 px-3 text-center font-bold">Pago 1</th>
+        <th class="py-3 px-3 text-center font-bold">Pago 2</th>
+        <th class="py-3 px-3 text-center font-bold">Pago 3</th>
+        <th class="py-3 px-3 text-center font-bold">Pago 4</th>
+        <th class="py-3 px-4 text-center font-bold">Estado</th>
+        <th class="py-3 px-4 text-center font-bold">Guardar</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for e in equipos %}
+        {% set pago = pagos_por_equipo.get(e.id) %}
+        <tr class="{{ 'hover:bg-green-50/40' if pago and pago.completados() == 4 else 'hover:bg-yellow-50/40 bg-yellow-50/20' }}">
+          <td class="py-3 px-4 font-semibold text-navy">{{ e.nombre }}</td>
+          {% if pago %}
+            {% for n in [1, 2, 3, 4] %}
+              <td class="py-3 px-3 text-center">
+                <input type="checkbox" name="pago_{{ n }}" form="pago-form-{{ pago.id }}"
+                       {% if (n == 1 and pago.pago_1) or (n == 2 and pago.pago_2) or (n == 3 and pago.pago_3) or (n == 4 and pago.pago_4) %}checked{% endif %}
+                       class="w-5 h-5">
+              </td>
+            {% endfor %}
+            <td class="py-3 px-4 text-center">
+              {% if pago.completados() == 4 %}
+                <span class="badge-green text-xs font-bold px-2.5 py-1 rounded-full">🟢 Completo</span>
+              {% else %}
+                <span class="badge-yellow text-xs font-bold px-2.5 py-1 rounded-full">{{ pago.completados() }} de 4</span>
+              {% endif %}
+            </td>
+            <td class="py-3 px-4 text-center">
+              <form id="pago-form-{{ pago.id }}" method="POST" action="{{ url_for('admin.actualizar_pago_cancha', pago_id=pago.id) }}"></form>
+              <button type="submit" form="pago-form-{{ pago.id }}" class="text-xs font-bold text-gold-dark hover:text-navy">Guardar</button>
+            </td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

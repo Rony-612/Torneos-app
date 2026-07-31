@@ -1,0 +1,34 @@
+{% extends "public/base.html" %}
+{% block title %}{{ jugador.nombre }}{% endblock %}
+{% block content %}
+<div class="bg-gradient-to-r from-navy to-navy-light rounded-xl shadow-elevation p-8 text-white mb-8 flex items-center gap-5">
+  <div class="w-16 h-16 rounded-full bg-white/15 flex items-center justify-center text-white font-display font-bold text-2xl flex-shrink-0">
+    {{ jugador.nombre[:2].upper() }}
+  </div>
+  <div>
+    <h1 class="font-display text-2xl sm:text-3xl font-bold">{{ jugador.nombre }}</h1>
+    {% if equipo %}
+      <a href="{{ url_for('public.equipo_detalle', equipo_id=equipo.id) }}" class="text-sm opacity-90 hover:opacity-100 hover:underline">{{ equipo.nombre }}</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid sm:grid-cols-4 gap-5">
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-6 text-center">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">Partidos</p>
+    <p class="font-display text-3xl font-bold text-navy mt-2">{{ stats.partidos_jugados }}</p>
+  </div>
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-6 text-center">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">⚽ Goles</p>
+    <p class="font-display text-3xl font-bold text-navy mt-2">{{ stats.goles }}</p>
+  </div>
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-6 text-center">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">🎯 Asistencias</p>
+    <p class="font-display text-3xl font-bold text-navy mt-2">{{ stats.asistencias }}</p>
+  </div>
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-6 text-center">
+    <p class="text-xs uppercase tracking-widest text-gray-500 font-bold">🟨🟥 Tarjetas</p>
+    <p class="font-display text-3xl font-bold text-navy mt-2">{{ stats.amarillas }} / {{ stats.rojas }}</p>
+  </div>
+</div>
+{% endblock %}

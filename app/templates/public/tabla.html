@@ -1,0 +1,47 @@
+{% extends "public/base.html" %}
+{% block title %}Tabla de posiciones{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-8">Tabla de posiciones</h1>
+<div class="grid lg:grid-cols-2 gap-6">
+  {% for nombre, filas in tablas.items() %}
+    <div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-navy to-navy-light text-white p-5 flex items-center gap-3">
+        <div class="w-2 h-8 bg-gold rounded-full"></div>
+        <h2 class="font-display text-xl font-bold">Grupo {{ nombre }}</h2>
+      </div>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-gray-50 text-gray-500">
+            <th class="py-2.5 px-4 text-left font-bold">Equipo</th>
+            <th class="py-2.5 px-2 text-center font-bold">PJ</th>
+            <th class="py-2.5 px-2 text-center font-bold">PG</th>
+            <th class="py-2.5 px-2 text-center font-bold">PE</th>
+            <th class="py-2.5 px-2 text-center font-bold">PP</th>
+            <th class="py-2.5 px-2 text-center font-bold">GF</th>
+            <th class="py-2.5 px-2 text-center font-bold">GC</th>
+            <th class="py-2.5 px-2 text-center font-bold">DG</th>
+            <th class="py-2.5 px-4 text-center font-bold">Pts</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for f in filas %}
+            <tr class="hover:bg-gray-50/70">
+              <td class="py-3 px-4 font-semibold text-navy">
+                <a href="{{ url_for('public.equipo_detalle', equipo_id=f.equipo.id) }}" class="hover:text-gold-dark">{{ f.equipo.nombre }}</a>
+              </td>
+              <td class="py-3 px-2 text-center text-gray-600">{{ f.pj }}</td>
+              <td class="py-3 px-2 text-center text-gray-600">{{ f.pg }}</td>
+              <td class="py-3 px-2 text-center text-gray-600">{{ f.pe }}</td>
+              <td class="py-3 px-2 text-center text-gray-600">{{ f.pp }}</td>
+              <td class="py-3 px-2 text-center text-gray-600">{{ f.gf }}</td>
+              <td class="py-3 px-2 text-center text-gray-600">{{ f.gc }}</td>
+              <td class="py-3 px-2 text-center text-gray-600">{{ f.dg }}</td>
+              <td class="py-3 px-4 text-center font-bold text-navy">{{ f.pts }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

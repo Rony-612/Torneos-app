@@ -1,0 +1,94 @@
+{% extends "admin/base.html" %}
+{% block title %}Resultado{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy">{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}</h1>
+<p class="text-gray-500 mt-1 mb-8">{{ partido.fecha.strftime('%d/%m/%Y') }} {{ partido.hora.strftime('%H:%M') }}</p>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 p-7 mb-8">
+  <h3 class="font-display text-xl font-bold text-navy mb-5">Marcador</h3>
+  <form method="POST" class="grid sm:grid-cols-2 gap-6">
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Goles {{ partido.equipo_local.nombre }}</label>
+      <input type="number" min="0" name="resultado_local" value="{{ partido.resultado_local if partido.resultado_local is not none else 0 }}" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+    </div>
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Goles {{ partido.equipo_visitante.nombre }}</label>
+      <input type="number" min="0" name="resultado_visitante" value="{{ partido.resultado_visitante if partido.resultado_visitante is not none else 0 }}" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+    </div>
+    <div class="sm:col-span-2">
+      <button type="submit" class="bg-gradient-to-r from-navy to-navy-light hover:shadow-elevation text-white font-bold px-6 py-2.5 rounded-lg transition-all">Guardar marcador</button>
+    </div>
+  </form>
+</div>
+
+<div class="bg-white rounded-xl shadow-card border border-red-100 p-7 mb-8">
+  <h3 class="font-display text-lg font-bold text-navy mb-2">¿No se pudo jugar?</h3>
+  <p class="text-sm text-gray-500 mb-4">Marca el partido como suspendido; quedará disponible en "Pendientes" para reprogramarlo cuando haya un horario libre.</p>
+  <form method="POST" action="{{ url_for('admin.suspender_partido', partido_id=partido.id) }}" onsubmit="return confirm('¿Marcar este partido como suspendido/pendiente?');">
+    <button type="submit" class="text-red-600 hover:text-red-800 font-bold px-5 py-2 text-sm border border-red-200 rounded-lg hover:bg-red-50">Partido suspendido</button>
+  </form>
+</div>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 p-7 mb-8">
+  <h3 class="font-display text-xl font-bold text-navy mb-5">Registrar evento (gol / tarjeta / asistencia)</h3>
+  <form method="POST" action="{{ url_for('admin.registrar_evento', partido_id=partido.id) }}" class="grid sm:grid-cols-3 gap-5">
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Jugador</label>
+      <select name="jugador_id" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+        <optgroup label="{{ partido.equipo_local.nombre }}">
+          {% for j in jugadores_local %}<option value="{{ j.id }}">{{ j.nombre }}</option>{% endfor %}
+        </optgroup>
+        <optgroup label="{{ partido.equipo_visitante.nombre }}">
+          {% for j in jugadores_visitante %}<option value="{{ j.id }}">{{ j.nombre }}</option>{% endfor %}
+        </optgroup>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Tipo de evento</label>
+      <select name="tipo_evento" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+        <option value="gol">Gol</option>
+        <option value="asistencia">Asistencia</option>
+        <option value="tarjeta_amarilla">Tarjeta amarilla</option>
+        <option value="tarjeta_roja">Tarjeta roja</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Minuto (opcional)</label>
+      <input type="number" min="0" max="130" name="minuto" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+    </div>
+    <div class="sm:col-span-3">
+      <button type="submit" class="bg-navy hover:bg-navy-light text-white font-bold px-6 py-2.5 rounded-lg transition-all">Registrar evento</button>
+    </div>
+  </form>
+</div>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+  <h3 class="font-display text-xl font-bold text-navy p-7 pb-0 mb-4">Eventos registrados</h3>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gradient-to-r from-navy to-navy-light text-white">
+        <th class="py-3 px-5 text-left font-bold">Jugador</th>
+        <th class="py-3 px-5 text-left font-bold">Equipo</th>
+        <th class="py-3 px-5 text-left font-bold">Evento</th>
+        <th class="py-3 px-5 text-center font-bold">Minuto</th>
+        <th class="py-3 px-5"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for e in partido.eventos %}
+        <tr class="hover:bg-gray-50/70">
+          <td class="py-3 px-5 font-semibold text-navy">{{ e.jugador.nombre }}</td>
+          <td class="py-3 px-5 text-gray-600">{{ e.equipo.nombre if e.equipo }}</td>
+          <td class="py-3 px-5 text-gray-600">{{ e.tipo_evento }}</td>
+          <td class="py-3 px-5 text-center text-gray-600">{{ e.minuto or '-' }}</td>
+          <td class="py-3 px-5 text-right">
+            <form method="POST" action="{{ url_for('admin.eliminar_evento', evento_id=e.id) }}">
+              <button type="submit" class="text-red-600 hover:text-red-800 font-bold text-xs">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

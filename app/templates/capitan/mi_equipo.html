@@ -1,0 +1,39 @@
+{% extends "capitan/base.html" %}
+{% block title %}Mi equipo{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">{{ equipo.nombre }}</h1>
+<p class="text-gray-600 mb-8">Estado de inscripción y seguro de tu plantilla. Si falta algo, contacta a la organización.</p>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gradient-to-r from-navy to-navy-light text-white">
+        <th class="py-3 px-5 text-left font-bold">#</th>
+        <th class="py-3 px-5 text-left font-bold">Jugador</th>
+        <th class="py-3 px-5 text-center font-bold">Inscripción</th>
+        <th class="py-3 px-5 text-center font-bold">Seguro</th>
+        <th class="py-3 px-5 text-center font-bold">Estado</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for r in rosters %}
+        <tr class="hover:bg-gray-50/70">
+          <td class="py-3 px-5 text-gray-400 font-bold">{{ r.numero_playera or '-' }}</td>
+          <td class="py-3 px-5 font-semibold text-navy">{{ r.jugador.nombre }}</td>
+          <td class="py-3 px-5 text-center">{{ '✅' if r.inscripcion_pagada else '❌' }}</td>
+          <td class="py-3 px-5 text-center">{{ '✅' if r.seguro_pagado else '❌' }}</td>
+          <td class="py-3 px-5 text-center">
+            {% if r.documentacion_completa() %}
+              <span class="badge-green text-xs font-bold px-2.5 py-1 rounded-full">🟢 Habilitado</span>
+            {% else %}
+              <span class="badge-yellow text-xs font-bold px-2.5 py-1 rounded-full">🟡 Incompleto</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="py-8 px-5 text-center text-gray-400">Sin jugadores registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

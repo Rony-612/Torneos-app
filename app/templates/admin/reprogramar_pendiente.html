@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+{% from "_macros/jornada_grid.html" import tabla_jornada %}
+{% block title %}Reprogramar pendiente{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Reprogramar partido pendiente</h1>
+<p class="text-gray-600 mb-8">{{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}</p>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 p-6 mb-8">
+  <label class="block text-sm font-bold text-navy mb-3">Elige la jornada donde quieres agregarlo</label>
+  <form method="GET">
+    <select name="jornada_id" onchange="this.form.submit()" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+      <option value="">-- Elige una jornada --</option>
+      {% for j in jornadas %}
+        <option value="{{ j.id }}" {% if jornada_elegida and jornada_elegida.id == j.id %}selected{% endif %}>
+          Jornada {{ j.numero }} ({{ j.estado }})
+        </option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
+{% if jornada_elegida %}
+  <form method="POST" action="{{ url_for('admin.guardar_reprogramacion', partido_id=partido.id) }}">
+    <input type="hidden" name="jornada_id" value="{{ jornada_elegida.id }}">
+    <p class="text-sm text-gray-600 mb-3">Elige un horario disponible (los que ya tienen partido no se pueden seleccionar):</p>
+    {{ tabla_jornada(jornada_elegida, grid, modo='seleccionar') }}
+    <button type="submit" class="mt-5 bg-gradient-to-r from-navy to-navy-light hover:shadow-elevation text-white font-bold px-6 py-2.5 rounded-lg transition-all">Confirmar horario</button>
+    <a href="{{ url_for('admin.pendientes') }}" class="ml-3 text-sm font-bold text-gray-500 hover:text-navy">Cancelar</a>
+  </form>
+{% endif %}
+{% endblock %}

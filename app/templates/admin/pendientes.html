@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block title %}Pendientes{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Juegos pendientes</h1>
+<p class="text-gray-600 mb-8">Partidos suspendidos que todavía no tienen un horario definitivo.</p>
+
+<div class="space-y-4">
+  {% for p in partidos %}
+    <div class="bg-white rounded-xl shadow-card border-2 border-red-100 p-6 flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <p class="font-semibold text-navy">{{ p.equipo_local.nombre }} vs {{ p.equipo_visitante.nombre }}</p>
+        <p class="text-xs text-gray-500 mt-1">Jornada {{ p.jornada.numero }} · era {{ p.fecha.strftime('%d/%m/%Y') }} {{ p.hora.strftime('%H:%M') }}</p>
+        {% if p.nota %}<p class="text-xs text-gray-500 mt-1 italic">{{ p.nota }}</p>{% endif %}
+      </div>
+      <div class="flex gap-3 flex-wrap">
+        <a href="{{ url_for('admin.reprogramar_pendiente', partido_id=p.id) }}" class="bg-gradient-to-r from-navy to-navy-light text-white font-bold px-5 py-2 rounded-lg text-sm">Agregar al calendario</a>
+        <form method="POST" action="{{ url_for('admin.eliminar_pendiente', partido_id=p.id) }}" onsubmit="return confirm('¿Eliminar este partido pendiente por completo?');">
+          <button type="submit" class="text-red-600 hover:text-red-800 font-bold px-4 py-2 text-sm border border-red-200 rounded-lg hover:bg-red-50">Eliminar</button>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-gray-500">No hay partidos pendientes por el momento.</p>
+  {% endfor %}
+</div>
+{% endblock %}

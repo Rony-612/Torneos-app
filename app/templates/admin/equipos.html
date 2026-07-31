@@ -1,0 +1,75 @@
+{% extends "admin/base.html" %}
+{% block title %}Equipos{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+  <div>
+    <h1 class="font-display text-3xl font-bold text-navy">Gestión de equipos</h1>
+    <p class="text-gray-600 mt-2">Registra equipos y jugadores.</p>
+  </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 p-7 mb-8">
+  <h3 class="font-display text-xl font-bold text-navy mb-5">Registrar equipo</h3>
+  <form method="POST" action="{{ url_for('admin.crear_equipo') }}" class="grid sm:grid-cols-2 gap-5">
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Nombre del equipo</label>
+      <input type="text" name="nombre" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+    </div>
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Grupo (ID, opcional — o asígnalo luego en "Grupos")</label>
+      <input type="number" name="grupo_id" placeholder="ID de grupo" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+    </div>
+    <div class="sm:col-span-2">
+      <button type="submit" class="bg-gradient-to-r from-navy to-navy-light hover:shadow-elevation text-white font-bold px-6 py-2.5 rounded-lg transition-all">Registrar equipo</button>
+    </div>
+  </form>
+</div>
+
+<div class="space-y-5">
+{% for e in equipos %}
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+    <div class="bg-gradient-to-r from-navy to-navy-light text-white p-5">
+      <p class="font-display font-bold text-lg">{{ e.nombre }}</p>
+      <p class="text-sm opacity-90 mt-1">{{ e.rosters|length }} jugador(es) registrados</p>
+    </div>
+    <div class="p-6">
+      <form method="POST" action="{{ url_for('admin.crear_jugador', equipo_id=e.id) }}" class="grid sm:grid-cols-3 gap-4 items-end">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold text-gray-500 mb-1">Nombre del jugador</label>
+          <input type="text" name="nombre" required class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">Número (opcional)</label>
+          <input type="number" name="numero" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none text-sm">
+        </div>
+        <div class="sm:col-span-3">
+          <button type="submit" class="bg-gold hover:bg-gold-dark text-navy font-bold px-5 py-2 rounded-lg transition-all text-sm">+ Agregar jugador</button>
+        </div>
+      </form>
+
+      <div class="mt-5 pt-5 border-t border-gray-100">
+        {% set correo_actual = capitanes_por_equipo.get(e.id) %}
+        <p class="text-xs font-bold text-gray-500 mb-2">
+          Cuenta de capitán
+          {% if correo_actual %}<span class="badge-green text-[10px] font-bold px-2 py-0.5 rounded-full ml-1">activa: {{ correo_actual }}</span>{% else %}<span class="badge-yellow text-[10px] font-bold px-2 py-0.5 rounded-full ml-1">sin crear</span>{% endif %}
+        </p>
+        <form method="POST" action="{{ url_for('admin.gestionar_capitan', equipo_id=e.id) }}" class="grid sm:grid-cols-3 gap-3 items-end">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-gray-500 mb-1">Correo del capitán</label>
+            <input type="email" name="email" value="{{ correo_actual or '' }}" required placeholder="capitan@correo.com" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none text-sm">
+          </div>
+          <div>
+            <button type="submit" class="bg-navy hover:bg-navy-light text-white font-bold px-4 py-2 rounded-lg transition-all text-sm w-full">
+              {{ 'Resetear contraseña' if correo_actual else 'Crear cuenta' }}
+            </button>
+          </div>
+        </form>
+        <p class="text-[11px] text-gray-400 mt-1">Deja la contraseña en blanco (no hay campo, se genera sola) y te la mostramos una sola vez para que se la compartas al capitán.</p>
+      </div>
+    </div>
+  </div>
+{% else %}
+  <p class="text-gray-500">Aún no hay equipos registrados.</p>
+{% endfor %}
+</div>
+{% endblock %}

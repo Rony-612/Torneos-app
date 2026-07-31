@@ -1,0 +1,43 @@
+{% extends "capitan/base.html" %}
+{% block title %}Avisos{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Objetos perdidos</h1>
+<p class="text-gray-600 mb-8">Publica algo que encontraste, o revisa si alguien encontró algo tuyo.</p>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 p-7 mb-8">
+  <h3 class="font-display text-xl font-bold text-navy mb-5">Reportar objeto encontrado</h3>
+  <form method="POST" class="grid sm:grid-cols-2 gap-5">
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Objeto</label>
+      <input type="text" name="titulo" required placeholder="Ej. Balón Nike, mochila azul..." class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+    </div>
+    <div>
+      <label class="block text-sm font-bold text-navy mb-2">Ubicación donde se encontró</label>
+      <input type="text" name="ubicacion" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+    </div>
+    <div class="sm:col-span-2">
+      <label class="block text-sm font-bold text-navy mb-2">Descripción</label>
+      <textarea name="descripcion" rows="2" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none"></textarea>
+    </div>
+    <div class="sm:col-span-2">
+      <button type="submit" class="bg-gradient-to-r from-navy to-navy-light hover:shadow-elevation text-white font-bold px-6 py-2.5 rounded-lg transition-all">Publicar aviso</button>
+    </div>
+  </form>
+</div>
+
+<div class="grid sm:grid-cols-2 gap-5">
+{% for o in objetos %}
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-6">
+    <p class="font-display font-bold text-navy">🔑 {{ o.titulo }}</p>
+    {% if o.ubicacion %}<p class="text-xs text-gray-500 mt-1">📍 {{ o.ubicacion }}</p>{% endif %}
+    {% if o.descripcion %}<p class="text-sm text-gray-600 mt-2">{{ o.descripcion }}</p>{% endif %}
+    <p class="text-xs text-gray-400 mt-3">
+      {{ o.fecha_reporte.strftime('%d/%m/%Y') }}
+      {% if o.reportado_por_equipo %} · reportado por {{ o.reportado_por_equipo.nombre }}{% endif %}
+    </p>
+  </div>
+{% else %}
+  <p class="text-gray-500">No hay avisos activos.</p>
+{% endfor %}
+</div>
+{% endblock %}

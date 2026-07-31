@@ -1,0 +1,50 @@
+{% extends "capitan/base.html" %}
+{% from "_macros/jornada_grid.html" import tabla_jornada %}
+{% block title %}Cambios de horario{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Cambios de horario</h1>
+<p class="text-gray-600 mb-8">Elige cuál de los horarios propuestos por el rival te funciona, o rechaza si ninguno te sirve.</p>
+
+<h3 class="font-display text-xl font-bold text-navy mb-4">Propuestas que te tocan responder</h3>
+<div class="space-y-6 mb-10">
+  {% for s in por_responder %}
+    {% set grid, opciones_dict = grids_por_responder[s.id] %}
+    <div class="bg-white rounded-xl shadow-elevation border-2 border-gold-light overflow-hidden">
+      <div class="p-6 pb-0">
+        <p class="font-semibold text-navy">{{ s.partido.equipo_local.nombre }} vs {{ s.partido.equipo_visitante.nombre }}</p>
+        <p class="text-xs text-gray-500 mt-1">Propuesto por {{ s.equipo_solicitante.nombre }} · horario actual: {{ s.partido.fecha.strftime('%d/%m/%Y') }} {{ s.partido.hora.strftime('%H:%M') }}</p>
+        {% if s.comentario %}<p class="text-sm text-gray-600 mt-2 italic">"{{ s.comentario }}"</p>{% endif %}
+      </div>
+      <form method="POST" action="{{ url_for('capitan.responder_solicitud', solicitud_id=s.id) }}">
+        <div class="p-6">
+          {{ tabla_jornada(s.partido.jornada, grid, modo='elegir', opciones_dict=opciones_dict) }}
+        </div>
+        <div class="p-6 pt-0 flex gap-3">
+          <button type="submit" name="decision" value="aceptar" class="bg-gradient-to-r from-navy to-navy-light text-white font-bold px-5 py-2 rounded-lg text-sm">Aceptar horario seleccionado</button>
+          <button type="submit" name="decision" value="rechazar" class="text-red-600 hover:text-red-800 font-bold px-5 py-2 text-sm border border-red-200 rounded-lg hover:bg-red-50">Ninguno me funciona</button>
+        </div>
+      </form>
+    </div>
+  {% else %}
+    <p class="text-gray-500">No tienes propuestas pendientes por responder.</p>
+  {% endfor %}
+</div>
+
+<h3 class="font-display text-xl font-bold text-navy mb-4">Mis solicitudes enviadas</h3>
+<div class="space-y-3">
+  {% for s in mis_solicitudes %}
+    <div class="bg-white rounded-xl shadow-card border border-gray-100 p-5 flex items-center justify-between flex-wrap gap-3">
+      <p class="text-sm text-gray-700">
+        {{ s.partido.equipo_local.nombre }} vs {{ s.partido.equipo_visitante.nombre }}
+        {% if s.nueva_fecha %} &rarr; {{ s.nueva_fecha.strftime('%d/%m/%Y') }} {{ s.nueva_hora.strftime('%H:%M') }}{% endif %}
+      </p>
+      <span class="text-xs font-bold px-2.5 py-1 rounded-full
+        {{ 'badge-green' if s.estado == 'aprobado' else 'badge-red' if s.estado == 'rechazado' else 'badge-yellow' }}">
+        {{ s.estado.replace('_', ' ') }}
+      </span>
+    </div>
+  {% else %}
+    <p class="text-gray-500">Aún no has enviado solicitudes de cambio.</p>
+  {% endfor %}
+</div>
+{% endblock %}

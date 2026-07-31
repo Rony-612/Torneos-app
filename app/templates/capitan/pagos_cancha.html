@@ -1,0 +1,36 @@
+{% extends "capitan/base.html" %}
+{% block title %}Pagos de cancha{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Pagos de cancha</h1>
+<p class="text-gray-600 mb-8">Estatus de los 4 pagos de renta de cancha de {{ equipo.nombre }}. Lo actualiza la organización.</p>
+
+<div class="bg-white rounded-xl shadow-card border border-gray-100 p-7 max-w-lg">
+  {% set completados = pago.completados() if pago else 0 %}
+  <div class="flex items-center justify-between mb-6">
+    <p class="font-display font-bold text-navy text-lg">Progreso</p>
+    {% if completados == 4 %}
+      <span class="badge-green text-xs font-bold px-3 py-1.5 rounded-full">🟢 Completo</span>
+    {% else %}
+      <span class="badge-yellow text-xs font-bold px-3 py-1.5 rounded-full">{{ completados }} de 4 pagados</span>
+    {% endif %}
+  </div>
+
+  <div class="grid grid-cols-4 gap-3">
+    {% for n in [1, 2, 3, 4] %}
+      {% set pagado = pago and ((n == 1 and pago.pago_1) or (n == 2 and pago.pago_2) or (n == 3 and pago.pago_3) or (n == 4 and pago.pago_4)) %}
+      <div class="flex flex-col items-center gap-2 p-4 rounded-lg border-2 {{ 'border-green-200 bg-green-50' if pagado else 'border-gray-200 bg-gray-50' }}">
+        <span class="text-2xl">{{ '✅' if pagado else '⬜' }}</span>
+        <span class="text-xs font-bold text-gray-500">Pago {{ n }}</span>
+      </div>
+    {% endfor %}
+  </div>
+
+  <p class="text-sm text-gray-500 mt-6">
+    {% if completados == 4 %}
+      Ya cubrieron los 4 pagos de cancha de la temporada.
+    {% else %}
+      Les falta{{ 'n' if (4 - completados) != 1 }} <strong>{{ 4 - completados }}</strong> pago{{ 's' if (4 - completados) != 1 }} por cubrir.
+    {% endif %}
+  </p>
+</div>
+{% endblock %}

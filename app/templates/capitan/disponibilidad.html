@@ -1,0 +1,54 @@
+{% extends "capitan/base.html" %}
+{% block title %}Disponibilidad{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl font-bold text-navy mb-2">Mi disponibilidad</h1>
+<p class="text-gray-600 mb-6">Marca los horarios en los que tu equipo puede jugar. La organizadora usará esto para armar el calendario.</p>
+
+<div class="flex items-center justify-between mb-6 bg-white rounded-xl shadow-card border border-gray-100 p-4">
+  <a href="{{ url_for('capitan.disponibilidad', semana=semana_anterior.isoformat()) }}" class="text-sm font-bold text-navy hover:text-gold">&larr; Semana anterior</a>
+  <p class="font-display font-bold text-navy">Semana del {{ semana.strftime('%d/%m/%Y') }}</p>
+  <a href="{{ url_for('capitan.disponibilidad', semana=semana_siguiente.isoformat()) }}" class="text-sm font-bold text-navy hover:text-gold">Semana siguiente &rarr;</a>
+</div>
+
+<form method="POST" class="bg-white rounded-xl shadow-card border border-gray-100 p-6">
+  <input type="hidden" name="semana" value="{{ semana.isoformat() }}">
+  <div class="overflow-x-auto">
+    <table class="border-collapse w-full">
+      <thead>
+        <tr>
+          <th class="p-2 text-xs text-gray-400"></th>
+          {% for dia in dias %}
+            <th class="p-2 text-sm font-bold text-navy uppercase capitalize">{{ dia }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for hora in horas %}
+          <tr>
+            <td class="p-1 pr-3 text-xs text-gray-500 font-semibold text-right whitespace-nowrap">{{ hora }}</td>
+            {% for dia in dias %}
+              {% set slot_key = dia ~ '|' ~ hora %}
+              {% set cell_id = 'cell-' ~ dia ~ '-' ~ hora %}
+              <td class="p-1.5">
+                <input type="checkbox" id="{{ cell_id }}" name="slot" value="{{ slot_key }}"
+                       class="hidden peer" {% if slot_key in marcados %}checked{% endif %}>
+                <label for="{{ cell_id }}"
+                  class="flex items-center justify-center w-20 h-14 sm:w-28 sm:h-16 rounded-lg border-2 border-gray-200 bg-gray-50 cursor-pointer text-xs font-bold text-gray-400
+                         peer-checked:bg-gradient-to-br peer-checked:from-navy peer-checked:to-navy-light peer-checked:border-navy peer-checked:text-white
+                         hover:border-gold transition-colors">{{ hora }}</label>
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="flex items-center gap-4 mt-6">
+    <button type="submit" class="bg-gradient-to-r from-navy to-navy-light hover:shadow-elevation text-white font-bold px-6 py-2.5 rounded-lg transition-all">Guardar disponibilidad de esta semana</button>
+    <span class="flex items-center gap-2 text-xs text-gray-500">
+      <span class="w-4 h-4 rounded bg-gradient-to-br from-navy to-navy-light inline-block"></span> Disponible
+      <span class="w-4 h-4 rounded bg-gray-50 border-2 border-gray-200 inline-block ml-3"></span> No disponible
+    </span>
+  </div>
+</form>
+{% endblock %}
