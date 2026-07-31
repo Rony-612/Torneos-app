@@ -33,25 +33,32 @@ def _registrar_en_log(destinatarios, asunto, cuerpo):
 
 
 def _enviar_smtp(destinatarios, asunto, cuerpo, servidor):
-    api_key = os.environ.get("RESEND_API_KEY")
+    api_key = os.environ.get("BREVO_API_KEY")
     if not api_key:
-        raise Exception("Falta configurar la variable de entorno RESEND_API_KEY en Render")
+        raise Exception("Falta configurar la variable de entorno BREVO_API_KEY en Render")
 
-    # Usamos directamente el remitente de pruebas oficial de Resend
-    remitente = os.environ.get("MAIL_FROM") or "Torneo DCEA <onboarding@resend.dev>"
+    remitente = os.environ.get("MAIL_FROM") or "Torneo DCEA <tusistema@gmail.com>"
+    
+    # Extraer el email limpio si viene en formato "Nombre <correo@domain.com>"
+    email_remitente = remitente.split("<")[-1].replace(">", "").strip()
+    nombre_remitente = remitente.split("<")[0].strip() if "<" in remitente else "Torneo DCEA"
 
-    url = "https://api.resend.com/emails"
+    url = "https://api.brevo.com/v3/smtp/email"
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "api-key": api_key,
         "Content-Type": "application/json",
-        "User-Agent": "TorneoDCEA-App/1.0"  # <- Esto evita el error 1010 de Cloudflare/Resend
+        "Accept": "application/json",
+        "User-Agent": "TorneoDCEA-App/1.0"
     }
 
+    # Brevo requiere que los destinatarios vayan en una lista de diccionarios [{"email": "..."}]
+    lista_to = [{"email": d} for d in destinatarios if d]
+
     payload = {
-        "from": remitente,
-        "to": destinatarios,
+        "sender": {"name": nombre_remitente, "email": email_remitente},
+        "to": lista_to,
         "subject": asunto,
-        "text": cuerpo
+        "textContent": cuerpo
     }
 
     req = urllib.request.Request(
@@ -63,8 +70,8 @@ def _enviar_smtp(destinatarios, asunto, cuerpo, servidor):
 
     try:
         with urllib.request.urlopen(req, timeout=10) as response:
-            if response.status not in (200, 201):
-                raise Exception(f"Resend API error status: {response.status}")
+            if response.status not in (200, 201, 202):
+                raise Exception(f"Brevo API error status: {response.status}")
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8")
         raise Exception(f"HTTPError {e.code}: {error_body}")
@@ -74,9 +81,7 @@ def enviar_correo(destinatarios, asunto, cuerpo):
     if not destinatarios:
         return
     
-    # Si tenemos configurada la API key de Resend, forzamos el envío por HTTP
-    # (reemplazando la lógica vieja del MAIL_SERVER tradicional)
-    api_key = os.environ.get("RESEND_API_KEY")
+    api_key = os.environ.get("BREVO_API_KEY")
     servidor = os.environ.get("MAIL_SERVER") or (True if api_key else None)
 
     try:
