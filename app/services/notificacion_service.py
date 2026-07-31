@@ -33,26 +33,20 @@ def _registrar_en_log(destinatarios, asunto, cuerpo):
 
 
 def _enviar_smtp(destinatarios, asunto, cuerpo, servidor):
-    """
-    Nota: Aunque se mantiene el nombre _enviar_smtp para no romper el resto de 
-    tu archivo, ahora utiliza la API HTTP de Resend (puerto 443 HTTPS) 
-    para evitar por completo el bloqueo de puertos que hace Render.
-    """
     api_key = os.environ.get("RESEND_API_KEY")
     if not api_key:
         raise Exception("Falta configurar la variable de entorno RESEND_API_KEY en Render")
 
-    # Resend por defecto permite enviar desde onboarding@resend.dev para pruebas,
-    # o tu propio dominio verificado si lo configuras después.
+    # Usamos directamente el remitente de pruebas oficial de Resend
     remitente = os.environ.get("MAIL_FROM") or "Torneo DCEA <onboarding@resend.dev>"
 
     url = "https://api.resend.com/emails"
     headers = {
         "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "User-Agent": "TorneoDCEA-App/1.0"  # <- Esto evita el error 1010 de Cloudflare/Resend
     }
 
-    # Resend acepta una lista de destinatarios (to)
     payload = {
         "from": remitente,
         "to": destinatarios,
@@ -74,7 +68,6 @@ def _enviar_smtp(destinatarios, asunto, cuerpo, servidor):
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8")
         raise Exception(f"HTTPError {e.code}: {error_body}")
-
 
 def enviar_correo(destinatarios, asunto, cuerpo):
     destinatarios = sorted({d for d in destinatarios if d})
