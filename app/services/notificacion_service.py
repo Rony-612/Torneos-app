@@ -66,6 +66,7 @@ def enviar_correo(destinatarios, asunto, cuerpo):
     except Exception as e:
         # una falla de correo nunca debe tumbar la accion principal
         # (publicar jornada, registrar resultado, etc.)
+        print(f"CRITICAL MAIL ERROR: {e}", flush=True)
         _registrar_en_log(destinatarios, f"[ERROR AL ENVIAR] {asunto}", f"{cuerpo}\n\nError: {e}")
 
 
