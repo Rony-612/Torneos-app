@@ -31,7 +31,12 @@ def _registrar_en_log(destinatarios, asunto, cuerpo):
 
 
 def _enviar_smtp(destinatarios, asunto, cuerpo, servidor):
-    remitente = os.environ.get("MAIL_FROM", "torneo@dcea.ugto.mx")
+    usuario = os.environ.get("MAIL_USERNAME")
+    # Gmail (y la mayoria de proveedores) exige que el remitente coincida con
+    # la cuenta autenticada, o lo rechaza/reescribe. Por eso MAIL_FROM usa
+    # MAIL_USERNAME como valor por defecto en vez de un correo inventado:
+    # asi no hay forma de dejarlo mal configurado por accidente.
+    remitente = os.environ.get("MAIL_FROM") or usuario or "torneo@dcea.ugto.mx"
     msg = MIMEText(cuerpo, "plain", "utf-8")
     msg["Subject"] = asunto
     msg["From"] = remitente
@@ -40,7 +45,6 @@ def _enviar_smtp(destinatarios, asunto, cuerpo, servidor):
     with smtplib.SMTP(servidor, puerto, timeout=10) as s:
         if os.environ.get("MAIL_USE_TLS", "1") == "1":
             s.starttls()
-        usuario = os.environ.get("MAIL_USERNAME")
         password = os.environ.get("MAIL_PASSWORD")
         if usuario and password:
             s.login(usuario, password)
