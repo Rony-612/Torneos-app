@@ -32,49 +32,33 @@ def _registrar_en_log(destinatarios, asunto, cuerpo):
         pass
 
 
-def _enviar_smtp(destinatarios, asunto, cuerpo, servidor):
-    api_key = os.environ.get("BREVO_API_KEY")
-    if not api_key:
-        raise Exception("Falta configurar la variable de entorno BREVO_API_KEY en Render")
+import smtplib
+from email.message import EmailMessage
+import logging
 
-    remitente = os.environ.get("MAIL_FROM") or "Torneo DCEA <tusistema@gmail.com>"
-    
-    # Extraer el email limpio si viene en formato "Nombre <correo@domain.com>"
-    email_remitente = remitente.split("<")[-1].replace(">", "").strip()
-    nombre_remitente = remitente.split("<")[0].strip() if "<" in remitente else "Torneo DCEA"
+logger = logging.getLogger("EmailDestination")
 
-    url = "https://api.brevo.com/v3/smtp/email"
-    headers = {
-        "api-key": api_key,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "TorneoDCEA-App/1.0"
-    }
+def _enviar_smtp(destinatario_email, destinatario_nombre, asunto, cuerpo_html):
+    # Credenciales de tu cuenta de Gmail personal o dedicada al sistema
+    remitente_email = "tu_correo@gmail.com"
+    remitente_password = "tu_contraseña_de_aplicacion" # Contraseña de 16 caracteres de Google
 
-    # Brevo requiere que los destinatarios vayan en una lista de diccionarios [{"email": "..."}]
-    lista_to = [{"email": d} for d in destinatarios if d]
-
-    payload = {
-        "sender": {"name": nombre_remitente, "email": email_remitente},
-        "to": lista_to,
-        "subject": asunto,
-        "textContent": cuerpo
-    }
-
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
-        method="POST"
-    )
+    msg = EmailMessage()
+    msg["Subject"] = asunto
+    msg["From"] = remitente_email
+    msg["To"] = destinatario_email
+    msg.set_content(cuerpo_html, subtype="html")
 
     try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            if response.status not in (200, 201, 202):
-                raise Exception(f"Brevo API error status: {response.status}")
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8")
-        raise Exception(f"HTTPError {e.code}: {error_body}")
+        # PythonAnywhere permite la conexión con smtp.gmail.com por el puerto 465
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(remitente_email, remitente_password)
+            smtp.send_message(msg)
+        logger.info(f"Correo enviado exitosamente a {destinatario_nombre} ({destinatario_email})")
+        return True
+    except Exception as e:
+        logger.error(f"Error al enviar correo a {destinatario_email}: {e}")
+        return False
 
 def enviar_correo(destinatarios, asunto, cuerpo):
     destinatarios = sorted({d for d in destinatarios if d})
