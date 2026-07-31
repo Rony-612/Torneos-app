@@ -11,9 +11,11 @@ MAIL_USE_TLS) para que empiece a mandar correos de verdad por SMTP, sin
 cambiar una sola línea de código de las funciones de abajo.
 """
 import os
-import smtplib
+import json
 from datetime import datetime
 from email.mime.text import MIMEText
+import urllib.request
+import urllib.error
 
 _PROYECTO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOG_PATH = os.path.join(_PROYECTO_ROOT, "correos_enviados.log")
@@ -27,48 +29,71 @@ def _registrar_en_log(destinatarios, asunto, cuerpo):
             f.write(f"Para:      {', '.join(destinatarios)}\n")
             f.write(f"Asunto:    {asunto}\n\n{cuerpo}\n")
     except OSError:
-        pass  # nunca debe tronar el flujo principal por un problema de log
+        pass
 
 
 def _enviar_smtp(destinatarios, asunto, cuerpo, servidor):
-    usuario = os.environ.get("MAIL_USERNAME")
-    # Gmail (y la mayoria de proveedores) exige que el remitente coincida con
-    # la cuenta autenticada, o lo rechaza/reescribe. Por eso MAIL_FROM usa
-    # MAIL_USERNAME como valor por defecto en vez de un correo inventado:
-    # asi no hay forma de dejarlo mal configurado por accidente.
-    remitente = os.environ.get("MAIL_FROM") or usuario or "torneo@dcea.ugto.mx"
-    msg = MIMEText(cuerpo, "plain", "utf-8")
-    msg["Subject"] = asunto
-    msg["From"] = remitente
-    msg["To"] = ", ".join(destinatarios)
-    puerto = int(os.environ.get("MAIL_PORT", "587"))
-    with smtplib.SMTP(servidor, puerto, timeout=10) as s:
-        if os.environ.get("MAIL_USE_TLS", "1") == "1":
-            s.starttls()
-        password = os.environ.get("MAIL_PASSWORD")
-        if usuario and password:
-            s.login(usuario, password)
-        s.sendmail(remitente, destinatarios, msg.as_string())
+    """
+    Nota: Aunque se mantiene el nombre _enviar_smtp para no romper el resto de 
+    tu archivo, ahora utiliza la API HTTP de Resend (puerto 443 HTTPS) 
+    para evitar por completo el bloqueo de puertos que hace Render.
+    """
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        raise Exception("Falta configurar la variable de entorno RESEND_API_KEY en Render")
+
+    # Resend por defecto permite enviar desde onboarding@resend.dev para pruebas,
+    # o tu propio dominio verificado si lo configuras después.
+    remitente = os.environ.get("MAIL_FROM") or "Torneo DCEA <onboarding@resend.dev>"
+
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    # Resend acepta una lista de destinatarios (to)
+    payload = {
+        "from": remitente,
+        "to": destinatarios,
+        "subject": asunto,
+        "text": cuerpo
+    }
+
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers=headers,
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status not in (200, 201):
+                raise Exception(f"Resend API error status: {response.status}")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        raise Exception(f"HTTPError {e.code}: {error_body}")
 
 
 def enviar_correo(destinatarios, asunto, cuerpo):
-    """Punto de entrada unico. destinatarios puede traer None/duplicados/
-    vacios sin problema, aqui se limpian."""
     destinatarios = sorted({d for d in destinatarios if d})
     if not destinatarios:
         return
-    servidor = os.environ.get("MAIL_SERVER")
+    
+    # Si tenemos configurada la API key de Resend, forzamos el envío por HTTP
+    # (reemplazando la lógica vieja del MAIL_SERVER tradicional)
+    api_key = os.environ.get("RESEND_API_KEY")
+    servidor = os.environ.get("MAIL_SERVER") or (True if api_key else None)
+
     try:
         if servidor:
             _enviar_smtp(destinatarios, asunto, cuerpo, servidor)
         else:
             _registrar_en_log(destinatarios, asunto, cuerpo)
     except Exception as e:
-        # una falla de correo nunca debe tumbar la accion principal
-        # (publicar jornada, registrar resultado, etc.)
         print(f"CRITICAL MAIL ERROR: {e}", flush=True)
         _registrar_en_log(destinatarios, f"[ERROR AL ENVIAR] {asunto}", f"{cuerpo}\n\nError: {e}")
-
 
 def _correos_organizacion():
     from app.models import Usuario
