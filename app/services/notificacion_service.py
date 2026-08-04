@@ -1,21 +1,35 @@
 """Notificaciones por correo electrónico.
 
-En desarrollo (sin variables de entorno de SMTP configuradas) los correos NO
-se envían de verdad: se registran en `correos_enviados.log` en la raíz del
-proyecto, para poder revisar exactamente qué se hubiera mandado y a quién sin
-necesitar credenciales reales ni acceso a internet.
+Soporta dos formas de mandar correos de verdad, y elige sola cuál usar según
+qué variables de entorno estén configuradas:
 
-En producción, basta con definir las variables de entorno MAIL_SERVER,
-MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD (y opcionalmente MAIL_FROM,
-MAIL_USE_TLS) para que empiece a mandar correos de verdad por SMTP, sin
-cambiar una sola línea de código de las funciones de abajo.
+1. **Brevo (API por HTTPS)** — si existe BREVO_API_KEY. Se manda por
+   internet normal (puerto 443), así que funciona en hostings como Render
+   que bloquean los puertos de SMTP (25/465/587) para evitar spam.
+   Requiere que el remitente (MAIL_FROM) esté verificado en Brevo, y —desde
+   que Gmail/Yahoo/Microsoft lo exigen (feb. 2024)— que sea de un dominio
+   propio autenticado (no un @gmail.com/@hotmail.com/@yahoo.com), o los
+   correos hacia esos proveedores se van a rechazar por seguridad.
+
+2. **SMTP clásico** — si existe MAIL_SERVER (y no hay BREVO_API_KEY). Sirve
+   en hostings que sí dejan salir por esos puertos (por ejemplo PythonAnywhere
+   con Gmail).
+
+Si no hay ninguna de las dos configuradas, no se pierde nada: se registra en
+`correos_enviados.log` en la raíz del proyecto, con fecha, destinatarios,
+asunto y cuerpo completo, para poder revisar qué se hubiera mandado.
+
+Si el envío falla (credenciales mal puestas, remitente no verificado, etc.),
+el error se imprime a la consola (visible en el "Logs" de Render/PythonAnywhere)
+Y se guarda en el log local, para poder diagnosticar sin perder el aviso.
 """
 import os
 import json
-from datetime import datetime
-from email.mime.text import MIMEText
+import smtplib
 import urllib.request
 import urllib.error
+from datetime import datetime
+from email.mime.text import MIMEText
 
 _PROYECTO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOG_PATH = os.path.join(_PROYECTO_ROOT, "correos_enviados.log")
@@ -29,57 +43,95 @@ def _registrar_en_log(destinatarios, asunto, cuerpo):
             f.write(f"Para:      {', '.join(destinatarios)}\n")
             f.write(f"Asunto:    {asunto}\n\n{cuerpo}\n")
     except OSError:
-        pass
+        pass  # nunca debe tronar el flujo principal por un problema de log
 
 
-import smtplib
-from email.message import EmailMessage
-import logging
+def _remitente_nombre_y_correo():
+    remitente = os.environ.get("MAIL_FROM") or os.environ.get("MAIL_USERNAME") or "torneo@dcea.ugto.mx"
+    if "<" in remitente and ">" in remitente:
+        nombre = remitente.split("<")[0].strip() or "Torneo"
+        correo = remitente.split("<")[-1].replace(">", "").strip()
+    else:
+        nombre, correo = "Torneo", remitente
+    return nombre, correo
 
-logger = logging.getLogger("EmailDestination")
 
-import resend
+def _enviar_brevo(destinatarios, asunto, cuerpo):
+    """Manda el correo usando la API HTTP de Brevo (no SMTP, así que no lo
+    bloquean los hostings que cierran los puertos de correo)."""
+    api_key = os.environ["BREVO_API_KEY"]
+    nombre_remitente, correo_remitente = _remitente_nombre_y_correo()
 
-def _enviar_con_resend(destinatarios, asunto, cuerpo_html):
-    # Lee la llave que configuraremos en PythonAnywhere
-    resend.api_key = os.environ.get("RESEND_API_KEY")
-    
-    # Resend acepta una lista de correos en 'to'
-    params = {
-        "from": "Torneos DCEA <onboarding@resend.dev>",
-        "to": list(destinatarios),
+    payload = {
+        "sender": {"name": nombre_remitente, "email": correo_remitente},
+        "to": [{"email": d} for d in destinatarios],
         "subject": asunto,
-        "html": cuerpo_html.replace("\n", "<br>"), # Pasa tus textos planos a formato HTML básico
+        "textContent": cuerpo,
     }
-
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "api-key": api_key,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        method="POST",
+    )
     try:
-        response = resend.Emails.send(params)
-        return True
-    except Exception as e:
-        print(f"Error al enviar correo con Resend: {e}", flush=True)
-        return False
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status not in (200, 201, 202):
+                raise RuntimeError(f"Brevo respondió con status {response.status}")
+    except urllib.error.HTTPError as e:
+        cuerpo_error = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Brevo rechazó el envío (HTTP {e.code}): {cuerpo_error}") from None
+
+
+def _enviar_smtp(destinatarios, asunto, cuerpo):
+    """Manda el correo por SMTP clásico. Solo funciona en hostings que no
+    bloqueen los puertos de correo saliente (Render sí los bloquea)."""
+    servidor = os.environ["MAIL_SERVER"]
+    usuario = os.environ.get("MAIL_USERNAME")
+    _, correo_remitente = _remitente_nombre_y_correo()
+
+    msg = MIMEText(cuerpo, "plain", "utf-8")
+    msg["Subject"] = asunto
+    msg["From"] = correo_remitente
+    msg["To"] = ", ".join(destinatarios)
+
+    puerto = int(os.environ.get("MAIL_PORT", "587"))
+    with smtplib.SMTP(servidor, puerto, timeout=10) as s:
+        if os.environ.get("MAIL_USE_TLS", "1") == "1":
+            s.starttls()
+        password = os.environ.get("MAIL_PASSWORD")
+        if usuario and password:
+            s.login(usuario, password)
+        s.sendmail(correo_remitente, destinatarios, msg.as_string())
+
 
 def enviar_correo(destinatarios, asunto, cuerpo):
+    """Punto de entrada único. destinatarios puede traer None/duplicados/
+    vacíos sin problema, aquí se limpian. Elige sola el método de envío
+    según las variables de entorno que encuentre configuradas."""
     destinatarios = sorted({d for d in destinatarios if d})
     if not destinatarios:
         return
-    
-    # Verificamos si tenemos configurada la API key de Resend
-    resend_key = os.environ.get("RESEND_API_KEY")
-
     try:
-        if resend_key:
-            exito = _enviar_con_resend(destinatarios, asunto, cuerpo)
-            if not exito:
-                _registrar_en_log(destinatarios, f"[FALLO RESEND] {asunto}", cuerpo)
+        if os.environ.get("BREVO_API_KEY"):
+            _enviar_brevo(destinatarios, asunto, cuerpo)
+        elif os.environ.get("MAIL_SERVER"):
+            _enviar_smtp(destinatarios, asunto, cuerpo)
         else:
-            # Si no hay llave configurada, se va al log local de desarrollo
             _registrar_en_log(destinatarios, asunto, cuerpo)
     except Exception as e:
-        print(f"CRITICAL MAIL ERROR: {e}", flush=True)
+        # una falla de correo nunca debe tumbar la accion principal
+        # (publicar jornada, registrar resultado, etc.) — pero el error se
+        # imprime a consola (Logs de Render/PythonAnywhere) y se guarda,
+        # para poder diagnosticar qué pasó.
+        print(f"[correo] ERROR AL ENVIAR: {e}", flush=True)
         _registrar_en_log(destinatarios, f"[ERROR AL ENVIAR] {asunto}", f"{cuerpo}\n\nError: {e}")
 
-        
+
 def _correos_organizacion():
     from app.models import Usuario
     return [u.email for u in Usuario.query.filter(Usuario.rol.in_(["organizador", "ayudante"])).all()]
@@ -113,7 +165,6 @@ def notificar_publicacion_jornada(jornada):
 # ---------- Cambios de horario ----------
 
 def notificar_solicitud_cambio(solicitud):
-    from app.services.jornada_grid import construir_grid
     partido = solicitud.partido
     rival = partido.equipo_visitante if partido.equipo_local_id == solicitud.solicitado_por_equipo_id else partido.equipo_local
     opciones_txt = "\n".join(
@@ -223,7 +274,7 @@ def notificar_reprogramacion(partido):
     enviar_correo(destinatarios, asunto, cuerpo)
 
 
-# ---------- Recordatorios (requieren un disparador por tiempo, ver mas abajo) ----------
+# ---------- Recordatorios (requieren un disparador por tiempo) ----------
 
 def notificar_recordatorio_dia_antes(partido):
     destinatarios = [_correo_capitan(partido.equipo_local), _correo_capitan(partido.equipo_visitante)]
@@ -251,9 +302,7 @@ def ejecutar_recordatorios():
     """Revisa los partidos programados y manda el recordatorio de 'un dia
     antes' y el de 'una hora antes' a los que les toca, marcando cada uno
     para no duplicarlo. La llaman tanto el comando de consola
-    (`flask enviar-recordatorios`) como el endpoint HTTP protegido por token
-    (para poder dispararla desde un cron externo gratuito sin depender de
-    que el hosting tenga su propio programador de tareas).
+    (`flask enviar-recordatorios`) como el endpoint HTTP protegido por token.
     Regresa (enviados_dia, enviados_hora)."""
     from datetime import datetime, timedelta
     from app.extensions import db

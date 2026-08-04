@@ -59,6 +59,10 @@ def dashboard():
 @requiere_rol("organizador", "ayudante")
 def crear_jornada():
     fase = Fase.query.filter_by(tipo="grupos").first()
+    borrador_existente = Jornada.query.filter_by(fase_id=fase.id, estado="borrador").first()
+    if borrador_existente:
+        flash(f"Ya tienes la Jornada {borrador_existente.numero} en borrador; publícala antes de crear otra.", "error")
+        return redirect(url_for("admin.jornada_detalle", jornada_id=borrador_existente.id))
     ultimo = Jornada.query.filter_by(fase_id=fase.id).order_by(Jornada.numero.desc()).first()
     numero = (ultimo.numero + 1) if ultimo else 1
     jornada_service.crear_jornada(fase.id, numero)
@@ -104,6 +108,27 @@ def publicar_jornada(jornada_id):
     except jornada_service.JornadaYaPublicadaError as e:
         flash(str(e), "error")
     return redirect(url_for("admin.jornada_detalle", jornada_id=jornada_id))
+
+
+@admin_bp.route("/jornadas/<int:jornada_id>/eliminar", methods=["POST"])
+@login_required
+@requiere_rol("organizador", "ayudante")
+def eliminar_jornada(jornada_id):
+    from app.models import EventoPartido, DetallePartidoEquipo, SolicitudCambioHorario
+    jornada = Jornada.query.get_or_404(jornada_id)
+    if jornada.estado != "borrador":
+        flash("Solo se pueden eliminar jornadas en borrador (una ya publicada no).", "error")
+        return redirect(url_for("admin.jornada_detalle", jornada_id=jornada_id))
+    numero = jornada.numero
+    for p in list(jornada.partidos):
+        EventoPartido.query.filter_by(partido_id=p.id).delete()
+        DetallePartidoEquipo.query.filter_by(partido_id=p.id).delete()
+        SolicitudCambioHorario.query.filter_by(partido_id=p.id).delete()
+        db.session.delete(p)
+    db.session.delete(jornada)
+    db.session.commit()
+    flash(f"Jornada {numero} (borrador) eliminada.", "success")
+    return redirect(url_for("admin.dashboard"))
 
 
 @admin_bp.route("/jornadas/<int:jornada_id>/partidos/nuevo", methods=["POST"])
@@ -174,9 +199,17 @@ def registrar_resultado(partido_id):
 
     jugadores_local = partido.equipo_local.jugadores_temporada(temporada.id) if temporada else []
     jugadores_visitante = partido.equipo_visitante.jugadores_temporada(temporada.id) if temporada else []
+
+    conteo_por_jugador = {}
+    for e in partido.eventos:
+        fila = conteo_por_jugador.setdefault(e.jugador_id, {"gol": 0, "asistencia": 0, "tarjeta_amarilla": 0, "tarjeta_roja": 0})
+        if e.tipo_evento in fila:
+            fila[e.tipo_evento] += 1
+
     return render_template(
         "admin/resultado.html", partido=partido,
         jugadores_local=jugadores_local, jugadores_visitante=jugadores_visitante,
+        conteo_por_jugador=conteo_por_jugador,
     )
 
 
@@ -205,15 +238,19 @@ def registrar_evento(partido_id):
     jugador = Jugador.query.get_or_404(jugador_id)
     temporada = Temporada.query.first()
     equipo = jugador.equipo_actual(temporada.id) if temporada else None
-    evento = EventoPartido(
-        partido_id=partido.id, jugador_id=jugador_id,
-        equipo_id=equipo.id if equipo else None,
-        tipo_evento=request.form["tipo_evento"],
-        minuto=request.form.get("minuto") or None,
-    )
-    db.session.add(evento)
+    tipo_evento = request.form["tipo_evento"]
+    minuto = request.form.get("minuto") or None
+    cantidad = max(1, min(int(request.form.get("cantidad", 1) or 1), 20))
+
+    for _ in range(cantidad):
+        db.session.add(EventoPartido(
+            partido_id=partido.id, jugador_id=jugador_id,
+            equipo_id=equipo.id if equipo else None,
+            tipo_evento=tipo_evento, minuto=minuto,
+        ))
     db.session.commit()
-    flash("Evento registrado.", "success")
+    etiqueta = {"gol": "gol(es)", "asistencia": "asistencia(s)", "tarjeta_amarilla": "amarilla(s)", "tarjeta_roja": "roja(s)"}.get(tipo_evento, tipo_evento)
+    flash(f"{cantidad} {etiqueta} registrado(s) para {jugador.nombre}.", "success")
     return redirect(url_for("admin.registrar_resultado", partido_id=partido_id))
 
 
@@ -236,11 +273,17 @@ def eliminar_evento(evento_id):
 def equipos():
     lista = Equipo.query.order_by(Equipo.nombre).all()
     capitanes_por_equipo = {}
+    temporada = Temporada.query.first()
+    rosters_por_equipo = {}
     for e in lista:
         if e.capitan_id:
             capitan = Usuario.query.get(e.capitan_id)
             capitanes_por_equipo[e.id] = capitan.email if capitan else None
-    return render_template("admin/equipos.html", equipos=lista, capitanes_por_equipo=capitanes_por_equipo)
+        rosters_por_equipo[e.id] = [r for r in e.rosters if not temporada or r.temporada_id == temporada.id]
+    return render_template(
+        "admin/equipos.html", equipos=lista, capitanes_por_equipo=capitanes_por_equipo,
+        rosters_por_equipo=rosters_por_equipo,
+    )
 
 
 @admin_bp.route("/equipos/nuevo", methods=["POST"])
@@ -328,6 +371,82 @@ def crear_jugador(equipo_id):
     db.session.add(roster)
     db.session.commit()
     flash("Jugador agregado al equipo.", "success")
+    return redirect(url_for("admin.equipos"))
+
+
+@admin_bp.route("/rosters/<int:roster_id>/editar", methods=["POST"])
+@login_required
+@requiere_rol("organizador", "ayudante")
+def editar_jugador(roster_id):
+    roster = Roster.query.get_or_404(roster_id)
+    nombre = request.form.get("nombre", "").strip()
+    if nombre:
+        roster.jugador.nombre = nombre
+    roster.numero_playera = request.form.get("numero") or None
+    roster.posicion = request.form.get("posicion") or None
+    db.session.commit()
+    flash(f"Jugador {roster.jugador.nombre} actualizado.", "success")
+    return redirect(url_for("admin.equipos"))
+
+
+@admin_bp.route("/rosters/<int:roster_id>/eliminar", methods=["POST"])
+@login_required
+@requiere_rol("organizador", "ayudante")
+def eliminar_jugador(roster_id):
+    roster = Roster.query.get_or_404(roster_id)
+    jugador_id = roster.jugador_id
+    nombre = roster.jugador.nombre
+    db.session.delete(roster)
+    db.session.flush()
+    # si el jugador ya no pertenece a ningun otro roster, lo borra por completo
+    # (junto con sus eventos, para no dejar referencias sueltas)
+    if Roster.query.filter_by(jugador_id=jugador_id).count() == 0:
+        EventoPartido.query.filter_by(jugador_id=jugador_id).delete()
+        jugador = Jugador.query.get(jugador_id)
+        if jugador:
+            db.session.delete(jugador)
+    db.session.commit()
+    flash(f"Jugador {nombre} eliminado.", "success")
+    return redirect(url_for("admin.equipos"))
+
+
+@admin_bp.route("/equipos/<int:equipo_id>/eliminar", methods=["POST"])
+@login_required
+@requiere_rol("organizador", "ayudante")
+def eliminar_equipo(equipo_id):
+    equipo = Equipo.query.get_or_404(equipo_id)
+    tiene_partidos = Partido.query.filter(
+        db.or_(Partido.equipo_local_id == equipo.id, Partido.equipo_visitante_id == equipo.id)
+    ).first()
+    if tiene_partidos:
+        flash(
+            f"No se puede eliminar {equipo.nombre}: ya tiene partidos registrados en el torneo. "
+            "Si ya no participa, quítalo del grupo en vez de eliminarlo (así se conserva el historial).",
+            "error",
+        )
+        return redirect(url_for("admin.equipos"))
+
+    jugador_ids = [r.jugador_id for r in equipo.rosters]
+    Roster.query.filter_by(equipo_id=equipo.id).delete()
+    db.session.flush()
+    for jid in jugador_ids:
+        if Roster.query.filter_by(jugador_id=jid).count() == 0:
+            EventoPartido.query.filter_by(jugador_id=jid).delete()
+            jugador = Jugador.query.get(jid)
+            if jugador:
+                db.session.delete(jugador)
+
+    Inscripcion.query.filter_by(equipo_id=equipo.id).delete()
+    PagoCancha.query.filter_by(equipo_id=equipo.id).delete()
+    if equipo.capitan_id:
+        capitan = Usuario.query.get(equipo.capitan_id)
+        if capitan:
+            db.session.delete(capitan)
+
+    nombre = equipo.nombre
+    db.session.delete(equipo)
+    db.session.commit()
+    flash(f"Equipo {nombre} eliminado.", "success")
     return redirect(url_for("admin.equipos"))
 
 

@@ -30,36 +30,80 @@
 </div>
 
 <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7 mb-8">
-  <h3 class="font-display text-xl font-bold text-navy mb-5">Registrar evento (gol / tarjeta / asistencia)</h3>
-  <form method="POST" action="{{ url_for('admin.registrar_evento', partido_id=partido.id) }}" class="grid sm:grid-cols-3 gap-5">
-    <div>
-      <label class="block text-sm font-bold text-navy mb-2">Jugador</label>
-      <select name="jugador_id" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
-        <optgroup label="{{ partido.equipo_local.nombre }}">
-          {% for j in jugadores_local %}<option value="{{ j.id }}">{{ j.nombre }}</option>{% endfor %}
-        </optgroup>
-        <optgroup label="{{ partido.equipo_visitante.nombre }}">
-          {% for j in jugadores_visitante %}<option value="{{ j.id }}">{{ j.nombre }}</option>{% endfor %}
-        </optgroup>
-      </select>
+  <h3 class="font-display text-xl font-bold text-navy mb-2">Registrar goles y tarjetas</h3>
+  <p class="text-sm text-gray-500 mb-5">Un clic por evento. Para varios goles del mismo jugador, cambia el número antes de darle a ⚽.</p>
+
+  {% for equipo_nombre, jugadores in [(partido.equipo_local.nombre, jugadores_local), (partido.equipo_visitante.nombre, jugadores_visitante)] %}
+    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mt-5 mb-2">{{ equipo_nombre }}</p>
+    <div class="space-y-2">
+      {% for j in jugadores %}
+        {% set c = conteo_por_jugador.get(j.id, {"gol": 0, "asistencia": 0, "tarjeta_amarilla": 0, "tarjeta_roja": 0}) %}
+        <div class="flex items-center justify-between gap-3 flex-wrap p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+          <span class="font-semibold text-navy text-sm min-w-[140px]">{{ j.nombre }}</span>
+
+          <form method="POST" action="{{ url_for('admin.registrar_evento', partido_id=partido.id) }}" class="flex items-center gap-1.5">
+            <input type="hidden" name="jugador_id" value="{{ j.id }}">
+            <input type="hidden" name="tipo_evento" value="gol">
+            <input type="number" name="cantidad" value="1" min="1" max="20" class="w-12 px-1 py-1.5 border-2 border-gray-200 rounded-lg text-xs text-center focus:border-gold focus:outline-none">
+            <button type="submit" class="bg-green-50 hover:bg-green-100 text-green-700 font-bold px-2.5 py-1.5 rounded-lg text-sm">⚽ Gol {% if c.gol %}<span class="text-xs">({{ c.gol }})</span>{% endif %}</button>
+          </form>
+
+          <form method="POST" action="{{ url_for('admin.registrar_evento', partido_id=partido.id) }}">
+            <input type="hidden" name="jugador_id" value="{{ j.id }}">
+            <input type="hidden" name="tipo_evento" value="asistencia">
+            <button type="submit" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1.5 rounded-lg text-sm">🎯 Asist. {% if c.asistencia %}<span class="text-xs">({{ c.asistencia }})</span>{% endif %}</button>
+          </form>
+
+          <form method="POST" action="{{ url_for('admin.registrar_evento', partido_id=partido.id) }}">
+            <input type="hidden" name="jugador_id" value="{{ j.id }}">
+            <input type="hidden" name="tipo_evento" value="tarjeta_amarilla">
+            <button type="submit" class="bg-yellow-50 hover:bg-yellow-100 text-yellow-700 font-bold px-2.5 py-1.5 rounded-lg text-sm">🟨 {% if c.tarjeta_amarilla %}<span class="text-xs">({{ c.tarjeta_amarilla }})</span>{% endif %}</button>
+          </form>
+
+          <form method="POST" action="{{ url_for('admin.registrar_evento', partido_id=partido.id) }}">
+            <input type="hidden" name="jugador_id" value="{{ j.id }}">
+            <input type="hidden" name="tipo_evento" value="tarjeta_roja">
+            <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-700 font-bold px-2.5 py-1.5 rounded-lg text-sm">🟥 {% if c.tarjeta_roja %}<span class="text-xs">({{ c.tarjeta_roja }})</span>{% endif %}</button>
+          </form>
+        </div>
+      {% else %}
+        <p class="text-gray-400 text-sm">Sin jugadores registrados en este equipo.</p>
+      {% endfor %}
     </div>
-    <div>
-      <label class="block text-sm font-bold text-navy mb-2">Tipo de evento</label>
-      <select name="tipo_evento" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
-        <option value="gol">Gol</option>
-        <option value="asistencia">Asistencia</option>
-        <option value="tarjeta_amarilla">Tarjeta amarilla</option>
-        <option value="tarjeta_roja">Tarjeta roja</option>
-      </select>
-    </div>
-    <div>
-      <label class="block text-sm font-bold text-navy mb-2">Minuto (opcional)</label>
-      <input type="number" min="0" max="130" name="minuto" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
-    </div>
-    <div class="sm:col-span-3">
-      <button type="submit" class="bg-navy hover:bg-navy-light text-white font-bold px-6 py-2.5 rounded-lg transition-all">Registrar evento</button>
-    </div>
-  </form>
+  {% endfor %}
+
+  <details class="mt-6">
+    <summary class="text-xs font-bold text-gray-500 cursor-pointer">¿Necesitas poner el minuto exacto? Usa el formulario detallado</summary>
+    <form method="POST" action="{{ url_for('admin.registrar_evento', partido_id=partido.id) }}" class="grid sm:grid-cols-3 gap-5 mt-4">
+      <div>
+        <label class="block text-sm font-bold text-navy mb-2">Jugador</label>
+        <select name="jugador_id" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+          <optgroup label="{{ partido.equipo_local.nombre }}">
+            {% for j in jugadores_local %}<option value="{{ j.id }}">{{ j.nombre }}</option>{% endfor %}
+          </optgroup>
+          <optgroup label="{{ partido.equipo_visitante.nombre }}">
+            {% for j in jugadores_visitante %}<option value="{{ j.id }}">{{ j.nombre }}</option>{% endfor %}
+          </optgroup>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-navy mb-2">Tipo de evento</label>
+        <select name="tipo_evento" required class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+          <option value="gol">Gol</option>
+          <option value="asistencia">Asistencia</option>
+          <option value="tarjeta_amarilla">Tarjeta amarilla</option>
+          <option value="tarjeta_roja">Tarjeta roja</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-navy mb-2">Minuto (opcional)</label>
+        <input type="number" min="0" max="130" name="minuto" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
+      </div>
+      <div class="sm:col-span-3">
+        <button type="submit" class="bg-navy hover:bg-navy-light text-white font-bold px-6 py-2.5 rounded-lg transition-all">Registrar evento</button>
+      </div>
+    </form>
+  </details>
 </div>
 
 <div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">

@@ -16,8 +16,12 @@
     <p class="font-bold text-navy">Esta jornada es borrador: solo tú la ves.</p>
     <p class="text-sm text-gray-600 mt-1">Nadie en el sitio público, ni los correos, se enterarán hasta que la publiques.</p>
     <form method="POST" action="{{ url_for('admin.publicar_jornada', jornada_id=jornada.id) }}"
-          onsubmit="return confirm('¿Publicar esta jornada? Se hará visible en el sitio público.');" class="mt-4">
+          onsubmit="return confirm('¿Publicar esta jornada? Se hará visible en el sitio público.');" class="mt-4 inline-block">
       <button type="submit" class="bg-gradient-to-r from-navy to-navy-light hover:shadow-elevation text-white font-bold px-6 py-2.5 rounded-lg transition-all">Publicar jornada</button>
+    </form>
+    <form method="POST" action="{{ url_for('admin.eliminar_jornada', jornada_id=jornada.id) }}"
+          onsubmit="return confirm('¿Eliminar esta jornada en borrador y todos sus partidos? No se puede deshacer.');" class="mt-4 inline-block ml-3">
+      <button type="submit" class="text-red-600 hover:text-red-800 font-bold px-6 py-2.5 border border-red-200 rounded-lg hover:bg-red-50">Eliminar borrador</button>
     </form>
   </div>
 {% endif %}

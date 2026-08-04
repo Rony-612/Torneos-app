@@ -38,7 +38,14 @@
       </h3>
       <p class="text-sm text-gray-500 mt-1">{{ j.partidos|length }} partido(s)</p>
     </div>
-    <a href="{{ url_for('admin.jornada_detalle', jornada_id=j.id) }}" class="bg-navy hover:bg-navy-light text-white font-bold px-5 py-2.5 rounded-lg transition-all text-sm">Gestionar</a>
+    <div class="flex items-center gap-3">
+      <a href="{{ url_for('admin.jornada_detalle', jornada_id=j.id) }}" class="bg-navy hover:bg-navy-light text-white font-bold px-5 py-2.5 rounded-lg transition-all text-sm">Gestionar</a>
+      {% if j.estado == 'borrador' %}
+        <form method="POST" action="{{ url_for('admin.eliminar_jornada', jornada_id=j.id) }}" onsubmit="return confirm('¿Eliminar esta jornada en borrador y todos sus partidos?');">
+          <button type="submit" class="text-red-600 hover:text-red-800 font-bold px-4 py-2.5 text-sm border border-red-200 rounded-lg hover:bg-red-50">Eliminar</button>
+        </form>
+      {% endif %}
+    </div>
   </div>
 {% else %}
   <p class="text-gray-500">Aún no hay jornadas. Crea la primera arriba.</p>

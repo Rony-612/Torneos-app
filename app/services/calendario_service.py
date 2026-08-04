@@ -10,6 +10,11 @@ se agotó) pero todavía hay partidos suspendidos/pendientes de la fase, esta
 misma función arma una última jornada juntando esos pendientes en vez de
 crear partidos nuevos.
 
+Si ya existe una jornada en BORRADOR para la fase, cada corrida se agrega a
+esa misma jornada (mismo número) en vez de crear una jornada nueva cada vez
+que se le da "Generar calendario" — solo al PUBLICARSE una jornada, la
+siguiente corrida crea una jornada nueva con el número siguiente.
+
 Punto de extensión para el futuro: cuando se agregue un algoritmo de
 optimización, este módulo es el único que cambia.
 """
@@ -118,15 +123,31 @@ def generar_propuesta_jornada(fase_id, temporada_id, fecha_base=None, numero=Non
         usando_pendientes = True
 
     if numero is None:
-        ultimo = Jornada.query.filter_by(fase_id=fase_id).order_by(Jornada.numero.desc()).first()
-        numero = (ultimo.numero + 1) if ultimo else 1
+        borrador_existente = Jornada.query.filter_by(fase_id=fase_id, estado="borrador").first()
+        if borrador_existente:
+            jornada = borrador_existente
+            jornada.fecha_referencia = fecha_base  # por si eligieron otra semana al generar de nuevo
+        else:
+            ultimo = Jornada.query.filter_by(fase_id=fase_id).order_by(Jornada.numero.desc()).first()
+            numero_nuevo = (ultimo.numero + 1) if ultimo else 1
+            jornada = Jornada(fase_id=fase_id, numero=numero_nuevo, fecha_referencia=fecha_base, estado="borrador")
+            db.session.add(jornada)
+            db.session.flush()
+    else:
+        jornada = Jornada(fase_id=fase_id, numero=numero, fecha_referencia=fecha_base, estado="borrador")
+        db.session.add(jornada)
+        db.session.flush()
 
-    jornada = Jornada(fase_id=fase_id, numero=numero, fecha_referencia=fecha_base, estado="borrador")
-    db.session.add(jornada)
-    db.session.flush()
-
-    # todos los slots fijos disponibles esta semana (una cancha = un partido por slot)
-    slots_libres = [(dia, hora) for dia in DIAS_GRID for hora in HORAS_GRID]
+    # slots fijos de esta semana que ya tiene ocupados la jornada (si se esta
+    # reutilizando un borrador existente) + los que quedan libres. Una cancha
+    # = un partido por slot.
+    fechas_reversa = {fecha: dia for dia, fecha in fechas.items()}
+    slots_ocupados = set()
+    for p in jornada.partidos:
+        dia_p = fechas_reversa.get(p.fecha)
+        if dia_p:
+            slots_ocupados.add((dia_p, p.hora.strftime("%H:%M")))
+    slots_libres = [(dia, hora) for dia in DIAS_GRID for hora in HORAS_GRID if (dia, hora) not in slots_ocupados]
     partidos_creados = []
 
     if usando_pendientes:
