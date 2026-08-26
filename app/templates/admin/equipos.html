@@ -42,10 +42,10 @@
       {% if jugadores %}
         <div class="mb-5 space-y-2">
           {% for r in jugadores %}
-            <form id="jugador-form-{{ r.id }}" method="POST" action="{{ url_for('admin.editar_jugador', roster_id=r.id) }}" class="grid sm:grid-cols-5 gap-2 items-center p-2 rounded-lg hover:bg-gray-50">
-              <input type="text" name="nombre" value="{{ r.jugador.nombre }}" class="sm:col-span-2 w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none">
-              <input type="number" name="numero" value="{{ r.numero_playera or '' }}" placeholder="#" class="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none">
-              <input type="text" name="posicion" value="{{ r.posicion or '' }}" placeholder="Posición" class="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none">
+            <form id="jugador-form-{{ r.id }}" method="POST" action="{{ url_for('admin.editar_jugador', roster_id=r.id) }}" class="grid sm:grid-cols-6 gap-2 items-center p-2 rounded-lg hover:bg-gray-50">
+              <input type="text" name="nombre" value="{{ r.jugador.nombre }}" placeholder="Nombre" class="sm:col-span-2 w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none">
+              <input type="text" name="nua" value="{{ r.nua or '' }}" placeholder="NUA" class="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none">
+              <input type="text" name="licenciatura" value="{{ r.licenciatura or '' }}" placeholder="Licenciatura" class="sm:col-span-2 w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none">
               <div class="flex gap-2">
                 <button type="submit" class="text-xs font-bold text-gold-dark hover:text-navy px-2 py-1.5">Guardar</button>
                 <button type="submit" form="eliminar-jugador-{{ r.id }}" class="text-xs font-bold text-red-600 hover:text-red-800 px-2 py-1.5">Eliminar</button>
@@ -60,17 +60,21 @@
         <p class="text-gray-400 text-sm mb-5">Sin jugadores registrados todavía.</p>
       {% endif %}
 
-      <form method="POST" action="{{ url_for('admin.crear_jugador', equipo_id=e.id) }}" class="grid sm:grid-cols-3 gap-4 items-end">
-        <div class="sm:col-span-2">
+      <form method="POST" action="{{ url_for('admin.crear_jugador', equipo_id=e.id) }}" class="grid sm:grid-cols-4 gap-4 items-end">
+        <div>
           <label class="block text-xs font-bold text-gray-500 mb-1">Nombre del jugador</label>
           <input type="text" name="nombre" required class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none text-sm">
         </div>
         <div>
-          <label class="block text-xs font-bold text-gray-500 mb-1">Número (opcional)</label>
-          <input type="number" name="numero" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none text-sm">
+          <label class="block text-xs font-bold text-gray-500 mb-1">NUA</label>
+          <input type="text" name="nua" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none text-sm">
         </div>
-        <div class="sm:col-span-3">
-          <button type="submit" class="bg-gold hover:bg-gold-dark text-navy font-bold px-5 py-2 rounded-lg transition-all text-sm">+ Agregar jugador</button>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">Licenciatura</label>
+          <input type="text" name="licenciatura" placeholder="Ej. LCI, LRI, ARQ..." class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none text-sm">
+        </div>
+        <div>
+          <button type="submit" class="bg-gold hover:bg-gold-dark text-navy font-bold px-5 py-2 rounded-lg transition-all text-sm w-full">+ Agregar</button>
         </div>
       </form>
 

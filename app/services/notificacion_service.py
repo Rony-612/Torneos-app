@@ -145,6 +145,14 @@ def _correo_capitan(equipo):
     return None
 
 
+def _jornada_publicada(partido):
+    """Ningún correo relacionado a un partido debe salir mientras la
+    jornada a la que pertenece siga en borrador — la organizadora es quien
+    decide cuándo se vuelve oficial, y hasta entonces nada se comunica
+    (misma regla que ya aplica para la página pública)."""
+    return bool(partido and partido.jornada and partido.jornada.estado == "publicada")
+
+
 # ---------- Publicación de jornada ----------
 
 def notificar_publicacion_jornada(jornada):
@@ -165,6 +173,8 @@ def notificar_publicacion_jornada(jornada):
 # ---------- Cambios de horario ----------
 
 def notificar_solicitud_cambio(solicitud):
+    if not _jornada_publicada(solicitud.partido):
+        return  # la jornada sigue en borrador: no se comunica nada todavia
     partido = solicitud.partido
     rival = partido.equipo_visitante if partido.equipo_local_id == solicitud.solicitado_por_equipo_id else partido.equipo_local
     opciones_txt = "\n".join(
@@ -183,6 +193,8 @@ def notificar_solicitud_cambio(solicitud):
 
 
 def notificar_cambio_pendiente_aprobacion(solicitud):
+    if not _jornada_publicada(solicitud.partido):
+        return  # la jornada sigue en borrador: no se comunica nada todavia
     asunto = f"Cambio de horario aceptado, pendiente tu aprobación: {solicitud.partido.equipo_local.nombre} vs {solicitud.partido.equipo_visitante.nombre}"
     cuerpo = (
         f"Ambos equipos ya están de acuerdo en mover su partido a "
@@ -193,6 +205,8 @@ def notificar_cambio_pendiente_aprobacion(solicitud):
 
 
 def notificar_rechazo_cambio(solicitud):
+    if not _jornada_publicada(solicitud.partido):
+        return  # la jornada sigue en borrador: no se comunica nada todavia
     asunto = f"El equipo rival rechazó el cambio de horario: {solicitud.partido.equipo_local.nombre} vs {solicitud.partido.equipo_visitante.nombre}"
     cuerpo = (
         f"{solicitud.equipo_solicitante.nombre} había propuesto cambiar el horario de su partido, pero el "
@@ -204,6 +218,8 @@ def notificar_rechazo_cambio(solicitud):
 
 
 def notificar_resolucion_cambio(solicitud, aprobado):
+    if not _jornada_publicada(solicitud.partido):
+        return  # la jornada sigue en borrador: no se comunica nada todavia
     partido = solicitud.partido
     destinatarios = [_correo_capitan(partido.equipo_local), _correo_capitan(partido.equipo_visitante)]
     if aprobado:
@@ -222,6 +238,8 @@ def notificar_resolucion_cambio(solicitud, aprobado):
 
 
 def notificar_resolucion_rechazo(solicitud, suspendido):
+    if not _jornada_publicada(solicitud.partido):
+        return  # la jornada sigue en borrador: no se comunica nada todavia
     partido = solicitud.partido
     destinatarios = [_correo_capitan(partido.equipo_local), _correo_capitan(partido.equipo_visitante)]
     if suspendido:
@@ -239,6 +257,8 @@ def notificar_resolucion_rechazo(solicitud, suspendido):
 # ---------- Resultados y suspensiones ----------
 
 def notificar_resultado(partido):
+    if not _jornada_publicada(partido):
+        return  # la jornada sigue en borrador: no se comunica nada todavia
     destinatarios = [_correo_capitan(partido.equipo_local), _correo_capitan(partido.equipo_visitante)]
     asunto = f"Resultado publicado: {partido.equipo_local.nombre} {partido.resultado_local}-{partido.resultado_visitante} {partido.equipo_visitante.nombre}"
     cuerpo = (
@@ -250,6 +270,8 @@ def notificar_resultado(partido):
 
 
 def notificar_suspension(partido):
+    if not _jornada_publicada(partido):
+        return  # la jornada sigue en borrador: no se comunica nada todavia
     destinatarios = [_correo_capitan(partido.equipo_local), _correo_capitan(partido.equipo_visitante)]
     asunto = f"Partido suspendido: {partido.equipo_local.nombre} vs {partido.equipo_visitante.nombre}"
     cuerpo = (
@@ -262,6 +284,8 @@ def notificar_suspension(partido):
 
 
 def notificar_reprogramacion(partido):
+    if not _jornada_publicada(partido):
+        return  # la jornada sigue en borrador: no se comunica nada todavia
     destinatarios = [_correo_capitan(partido.equipo_local), _correo_capitan(partido.equipo_visitante)]
     asunto = f"Partido reprogramado: {partido.equipo_local.nombre} vs {partido.equipo_visitante.nombre}"
     cuerpo = (
@@ -277,6 +301,8 @@ def notificar_reprogramacion(partido):
 # ---------- Recordatorios (requieren un disparador por tiempo) ----------
 
 def notificar_recordatorio_dia_antes(partido):
+    if not _jornada_publicada(partido):
+        return  # la jornada sigue en borrador: no se comunica nada todavia
     destinatarios = [_correo_capitan(partido.equipo_local), _correo_capitan(partido.equipo_visitante)]
     asunto = f"Mañana juegas: {partido.equipo_local.nombre} vs {partido.equipo_visitante.nombre}"
     cuerpo = (
@@ -288,6 +314,8 @@ def notificar_recordatorio_dia_antes(partido):
 
 
 def notificar_recordatorio_hora_antes(partido):
+    if not _jornada_publicada(partido):
+        return  # la jornada sigue en borrador: no se comunica nada todavia
     destinatarios = [_correo_capitan(partido.equipo_local), _correo_capitan(partido.equipo_visitante)]
     asunto = f"En una hora juegas: {partido.equipo_local.nombre} vs {partido.equipo_visitante.nombre}"
     cuerpo = (

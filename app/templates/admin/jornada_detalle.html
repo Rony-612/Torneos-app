@@ -5,6 +5,7 @@
 <div class="mb-8 flex items-center gap-3 flex-wrap">
   <h1 class="font-display text-3xl font-bold text-navy">Jornada {{ jornada.numero }}</h1>
   <span class="text-xs font-bold px-3 py-1 rounded-full {{ 'badge-green' if jornada.estado == 'publicada' else 'badge-yellow' }}">{{ jornada.estado }}</span>
+  <a href="{{ url_for('admin.jornada_pdf', jornada_id=jornada.id) }}" class="ml-auto bg-navy hover:bg-navy-light text-white font-bold px-4 py-2 rounded-lg text-sm transition-all">📄 PDF para árbitros</a>
 </div>
 
 <div class="mb-8">

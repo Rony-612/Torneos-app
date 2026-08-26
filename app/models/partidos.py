@@ -92,6 +92,20 @@ class DetallePartidoEquipo(db.Model):
     equipo = db.relationship("Equipo")
 
 
+class Asistencia(db.Model):
+    """Pase de lista de un partido: un renglon por cada jugador que SI
+    asistio (mismo patron que Disponibilidad — solo se guardan los
+    presentes, no hace falta una fila 'ausente')."""
+    __tablename__ = "asistencias"
+    id = db.Column(db.Integer, primary_key=True)
+    partido_id = db.Column(db.Integer, db.ForeignKey("partidos.id"), nullable=False)
+    jugador_id = db.Column(db.Integer, db.ForeignKey("jugadores.id"), nullable=False)
+    equipo_id = db.Column(db.Integer, db.ForeignKey("equipos.id"), nullable=False)
+
+    jugador = db.relationship("Jugador")
+    equipo = db.relationship("Equipo")
+
+
 class Sancion(db.Model):
     __tablename__ = "sanciones"
     id = db.Column(db.Integer, primary_key=True)

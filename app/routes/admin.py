@@ -6,7 +6,7 @@ from app.extensions import db
 from app.models import (
     Usuario, Fase, Grupo, Jornada, Partido, Equipo, Jugador, Roster,
     EventoPartido, Noticia, Cancha, Arbitro, Temporada, Inscripcion,
-    Disponibilidad, SolicitudCambioHorario, ObjetoPerdido, PagoCancha,
+    Disponibilidad, SolicitudCambioHorario, ObjetoPerdido, PagoCancha, Asistencia,
 )
 from app.services import jornada_service, calendario_service, notificacion_service
 from app.utils import requiere_rol
@@ -95,6 +95,23 @@ def jornada_detalle(jornada_id):
         "admin/jornada_detalle.html", jornada=jornada, equipos=equipos,
         canchas=canchas, arbitros=arbitros, grid=grid,
         equipos_json=equipos_json, partidos_fase_json=partidos_fase_json,
+    )
+
+
+@admin_bp.route("/jornadas/<int:jornada_id>/pdf")
+@login_required
+@requiere_rol("organizador", "ayudante")
+def jornada_pdf(jornada_id):
+    from flask import send_file
+    from app.services.jornada_grid import construir_grid
+    from app.services.pdf_service import generar_pdf_jornada
+    jornada = Jornada.query.get_or_404(jornada_id)
+    grid = construir_grid(jornada)
+    temporada = Temporada.query.first()
+    buffer = generar_pdf_jornada(jornada, grid, temporada.id if temporada else None)
+    return send_file(
+        buffer, mimetype="application/pdf", as_attachment=True,
+        download_name=f"jornada_{jornada.numero}_arbitros.pdf",
     )
 
 
@@ -206,11 +223,31 @@ def registrar_resultado(partido_id):
         if e.tipo_evento in fila:
             fila[e.tipo_evento] += 1
 
+    asistieron_ids = {a.jugador_id for a in Asistencia.query.filter_by(partido_id=partido.id).all()}
+
     return render_template(
         "admin/resultado.html", partido=partido,
         jugadores_local=jugadores_local, jugadores_visitante=jugadores_visitante,
-        conteo_por_jugador=conteo_por_jugador,
+        conteo_por_jugador=conteo_por_jugador, asistieron_ids=asistieron_ids,
     )
+
+
+@admin_bp.route("/partidos/<int:partido_id>/asistencia", methods=["POST"])
+@login_required
+@requiere_rol("organizador", "ayudante")
+def registrar_asistencia(partido_id):
+    partido = Partido.query.get_or_404(partido_id)
+    Asistencia.query.filter_by(partido_id=partido.id).delete()
+    jugador_ids = request.form.getlist("asistio")
+    temporada = Temporada.query.first()
+    jugadores_local_ids = {j.id for j in partido.equipo_local.jugadores_temporada(temporada.id)} if temporada else set()
+    for jid in jugador_ids:
+        jid = int(jid)
+        equipo_id = partido.equipo_local_id if jid in jugadores_local_ids else partido.equipo_visitante_id
+        db.session.add(Asistencia(partido_id=partido.id, jugador_id=jid, equipo_id=equipo_id))
+    db.session.commit()
+    flash(f"Asistencia guardada: {len(jugador_ids)} jugador(es) presentes.", "success")
+    return redirect(url_for("admin.registrar_resultado", partido_id=partido_id))
 
 
 @admin_bp.route("/partidos/<int:partido_id>/suspender", methods=["POST"])
@@ -365,8 +402,8 @@ def crear_jugador(equipo_id):
     db.session.flush()
     roster = Roster(
         jugador_id=jugador.id, equipo_id=equipo.id, temporada_id=temporada.id,
-        numero_playera=request.form.get("numero") or None,
-        posicion=request.form.get("posicion") or None,
+        nua=request.form.get("nua") or None,
+        licenciatura=request.form.get("licenciatura") or None,
     )
     db.session.add(roster)
     db.session.commit()
@@ -382,8 +419,8 @@ def editar_jugador(roster_id):
     nombre = request.form.get("nombre", "").strip()
     if nombre:
         roster.jugador.nombre = nombre
-    roster.numero_playera = request.form.get("numero") or None
-    roster.posicion = request.form.get("posicion") or None
+    roster.nua = request.form.get("nua") or None
+    roster.licenciatura = request.form.get("licenciatura") or None
     db.session.commit()
     flash(f"Jugador {roster.jugador.nombre} actualizado.", "success")
     return redirect(url_for("admin.equipos"))

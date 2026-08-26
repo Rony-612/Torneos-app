@@ -94,6 +94,8 @@ class Roster(db.Model):
     temporada_id = db.Column(db.Integer, db.ForeignKey("temporadas.id"), nullable=False)
     numero_playera = db.Column(db.Integer)
     posicion = db.Column(db.String(50))
+    nua = db.Column(db.String(20))  # Numero Unico de Alumno (UG)
+    licenciatura = db.Column(db.String(80))
     inscripcion_pagada = db.Column(db.Boolean, default=False)
     seguro_pagado = db.Column(db.Boolean, default=False)
 

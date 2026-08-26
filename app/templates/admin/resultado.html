@@ -21,6 +21,42 @@
   </form>
 </div>
 
+<div class="bg-white rounded-xl shadow-card border border-gray-100 p-7 mb-8">
+  <h3 class="font-display text-xl font-bold text-navy mb-2">Pase de lista</h3>
+  <p class="text-sm text-gray-500 mb-5">Marca a los jugadores que sí asistieron a este partido.</p>
+  <form method="POST" action="{{ url_for('admin.registrar_asistencia', partido_id=partido.id) }}">
+    <div class="grid sm:grid-cols-2 gap-6">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">{{ partido.equipo_local.nombre }}</p>
+        <div class="space-y-1">
+          {% for j in jugadores_local %}
+            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm">
+              <input type="checkbox" name="asistio" value="{{ j.id }}" {% if j.id in asistieron_ids %}checked{% endif %} class="w-4 h-4">
+              {{ j.nombre }}
+            </label>
+          {% else %}
+            <p class="text-gray-400 text-sm">Sin jugadores registrados.</p>
+          {% endfor %}
+        </div>
+      </div>
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">{{ partido.equipo_visitante.nombre }}</p>
+        <div class="space-y-1">
+          {% for j in jugadores_visitante %}
+            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm">
+              <input type="checkbox" name="asistio" value="{{ j.id }}" {% if j.id in asistieron_ids %}checked{% endif %} class="w-4 h-4">
+              {{ j.nombre }}
+            </label>
+          {% else %}
+            <p class="text-gray-400 text-sm">Sin jugadores registrados.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <button type="submit" class="mt-5 bg-navy hover:bg-navy-light text-white font-bold px-6 py-2.5 rounded-lg transition-all">Guardar asistencia</button>
+  </form>
+</div>
+
 <div class="bg-white rounded-xl shadow-card border border-red-100 p-7 mb-8">
   <h3 class="font-display text-lg font-bold text-navy mb-2">¿No se pudo jugar?</h3>
   <p class="text-sm text-gray-500 mb-4">Marca el partido como suspendido; quedará disponible en "Pendientes" para reprogramarlo cuando haya un horario libre.</p>

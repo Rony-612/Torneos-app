@@ -65,6 +65,8 @@ with app.app_context():
     db.session.add(organizadora)
 
     # --- Equipos y jugadores ---
+    LICENCIATURAS = ["LCI", "LRI", "LMKT", "LCF", "LNI", "LAE", "LTUR", "LGE"]
+
     def crear_equipo(nombre, grupo, idx_base):
         equipo = Equipo(organizacion_id=org.id, nombre=nombre)
         db.session.add(equipo)
@@ -74,7 +76,11 @@ with app.app_context():
             jugador = Jugador(nombre=f"Jugador {idx_base}-{i}")
             db.session.add(jugador)
             db.session.flush()
-            db.session.add(Roster(jugador_id=jugador.id, equipo_id=equipo.id, temporada_id=temporada.id, numero_playera=i))
+            db.session.add(Roster(
+                jugador_id=jugador.id, equipo_id=equipo.id, temporada_id=temporada.id,
+                nua=f"{idx_base}{i:02d}{idx_base}45",
+                licenciatura=LICENCIATURAS[(idx_base + i) % len(LICENCIATURAS)],
+            ))
         return equipo
 
     equipos_a = [crear_equipo(n, grupo_a, i + 1) for i, n in enumerate(EQUIPOS_A)]
