@@ -20,6 +20,9 @@ NAVY = colors.HexColor("#002F6C")
 GOLD = colors.HexColor("#FFC400")
 
 
+CUPOS_ROSTER = 15  # espacios fijos en la tabla, aunque el equipo tenga menos jugadores registrados
+
+
 def _tabla_roster(equipo, temporada_id):
     styles = getSampleStyleSheet()
     encabezado = ["No.", "Nombre", "Licenciatura", "NUA", "Inscripción", "Seguro", "Asistencia"]
@@ -36,8 +39,10 @@ def _tabla_roster(equipo, temporada_id):
             "SI" if (roster and roster.seguro_pagado) else "",
             "",  # casilla en blanco para que el arbitro marque asistencia a mano
         ])
-    if len(filas) == 1:
-        filas.append(["-", "Sin jugadores registrados", "", "", "", "", ""])
+    # completar con filas en blanco hasta llegar a CUPOS_ROSTER, para que
+    # se puedan anotar a mano jugadores que no estén registrados en el sistema
+    for i in range(len(jugadores) + 1, CUPOS_ROSTER + 1):
+        filas.append([str(i), "", "", "", "", "", ""])
 
     tabla = Table(filas, colWidths=[1.1*cm, 5*cm, 3.3*cm, 2.3*cm, 2.3*cm, 2*cm, 2.3*cm], repeatRows=1)
     tabla.setStyle(TableStyle([
