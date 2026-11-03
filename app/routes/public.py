@@ -1,7 +1,7 @@
 import os
 from flask import Blueprint, render_template, abort, request, jsonify
 from app.models import Torneo, Fase, Grupo, Jornada, Partido, Equipo, Jugador, Noticia, Temporada
-from app.services import estadisticas_service, notificacion_service
+from app.services import estadisticas_service, notificacion_service, llaves_service
 
 public_bp = Blueprint("public", "public_routes", template_folder="../templates/public")
 
@@ -66,6 +66,15 @@ def calendario():
     )
     jornadas_con_grid = [(j, construir_grid(j)) for j in jornadas]
     return render_template("public/calendario.html", jornadas_con_grid=jornadas_con_grid)
+
+
+@public_bp.route("/llaves")
+def llaves():
+    data = llaves_service.armar_llaves()
+    # Mientras la jornada de cuartos siga en borrador, el publico no la ve.
+    if data and data["jornada"].estado != "publicada":
+        data = None
+    return render_template("public/llaves.html", llaves=data)
 
 
 @public_bp.route("/partido/<int:partido_id>")

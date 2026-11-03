@@ -29,6 +29,21 @@
   <a href="{{ url_for('admin.horarios') }}" class="inline-block mt-3 text-sm font-bold text-navy hover:text-gold">Ir a Horarios y generar calendario &rarr;</a>
 </div>
 
+<div class="bg-white rounded-xl shadow-card border {{ 'border-gold' if estado_regular.listo and not llaves_generadas else 'border-gray-100' }} p-6 mb-8 flex items-center justify-between flex-wrap gap-4">
+  <div>
+    <p class="font-bold text-navy">🏆 Fase final · Cuartos de final</p>
+    <p class="text-sm text-gray-600 mt-1">
+      {% if llaves_generadas %}Las llaves ya fueron generadas.
+      {% elif estado_regular.listo %}La fase regular terminó: ya puedes generar las llaves.
+      {% elif estado_regular.problema %}{{ estado_regular.problema }}
+      {% else %}Puedes generarlas cuando quieras ({{ estado_regular.jugados }} de {{ estado_regular.esperados }} partidos de la fase regular jugados).{% endif %}
+    </p>
+  </div>
+  <a href="{{ url_for('admin.llaves') }}" class="{{ 'bg-gradient-to-r from-gold to-gold-light text-navy-dark' if estado_regular.listo and not llaves_generadas else 'bg-navy text-white' }} font-bold px-5 py-2.5 rounded-lg transition-all text-sm hover:shadow-elevation">
+    {{ 'Ver llaves' if llaves_generadas else 'Generar llaves' }} &rarr;
+  </a>
+</div>
+
 <div class="space-y-4">
 {% for j in jornadas %}
   <div class="card-hover bg-white rounded-xl shadow-card border border-gray-100 p-6 flex items-center justify-between flex-wrap gap-4">

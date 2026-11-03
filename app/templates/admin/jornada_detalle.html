@@ -38,7 +38,7 @@
     </div>
     <div>
       <label class="block text-sm font-bold text-navy mb-2">Equipo visitante</label>
-      <p class="text-xs text-gray-400 mb-1">Solo se muestran equipos del mismo grupo que aún no se han enfrentado</p>
+      {% if jornada.fase.tipo == 'grupos' %}<p class="text-xs text-gray-400 mb-1">Solo se muestran equipos del mismo grupo que aún no se han enfrentado</p>{% endif %}
       <select name="equipo_visitante_id" required class="equipo-visitante-select w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-gold focus:outline-none">
         {% for e in equipos %}<option value="{{ e.id }}">{{ e.nombre }}</option>{% endfor %}
       </select>
@@ -187,11 +187,14 @@ function actualizarVisitante(pairEl) {
   }
 }
 
+// El filtro "mismo grupo" solo aplica a la fase de grupos; en cuartos los cruces son entre grupos.
+{% if jornada.fase.tipo == 'grupos' %}
 document.querySelectorAll('.equipo-pair').forEach(pairEl => {
   const localSel = pairEl.querySelector('.equipo-local-select');
   if (!localSel) return;
   actualizarVisitante(pairEl);
   localSel.addEventListener('change', () => actualizarVisitante(pairEl));
 });
+{% endif %}
 </script>
 {% endblock %}

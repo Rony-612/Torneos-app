@@ -1,0 +1,81 @@
+{% extends "admin/base.html" %}
+{% from "_macros/llaves.html" import bracket %}
+{% block title %}Llaves{% endblock %}
+{% block content %}
+<div class="mb-8">
+  <h1 class="font-display text-3xl sm:text-4xl font-bold text-navy">Llaves de cuartos</h1>
+  <p class="text-gray-600 text-base mt-2">Clasifican los 4 mejores de cada grupo: 1°A vs 4°B y 3°A vs 2°B a la izquierda; 1°B vs 4°A y 3°B vs 2°A a la derecha.</p>
+</div>
+
+{% if llaves %}
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-5 mb-8 flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <p class="font-bold text-navy">Jornada de cuartos
+        <span class="text-xs font-bold px-2.5 py-1 rounded-full ml-2 {{ 'badge-green' if llaves.jornada.estado == 'publicada' else 'badge-yellow' }}">{{ llaves.jornada.estado }}</span>
+      </p>
+      <p class="text-sm text-gray-500 mt-1">
+        {% if llaves.jornada.estado == 'borrador' %}Ajusta días y horarios, y publícala para que las llaves aparezcan en el sitio público.
+        {% else %}Ya es visible en el sitio público.{% endif %}
+      </p>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <a href="{{ url_for('admin.jornada_detalle', jornada_id=llaves.jornada.id) }}" class="bg-navy hover:bg-navy-light text-white font-bold px-5 py-2.5 rounded-lg transition-all text-sm">Gestionar y publicar</a>
+      {% if llaves.jornada.estado == 'borrador' %}
+        <form method="POST" action="{{ url_for('admin.regenerar_llaves') }}" onsubmit="return confirm('Se borrarán estos cuartos y se volverán a armar con la tabla actual. ¿Continuar?');">
+          <button type="submit" class="text-navy font-bold px-4 py-2.5 text-sm border border-navy/20 rounded-lg hover:bg-navy/5">Regenerar llaves</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+  <div class="overflow-x-auto pb-2">{{ bracket(llaves, admin=True) }}</div>
+
+{% else %}
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7 max-w-2xl">
+    <h2 class="font-display text-xl font-bold text-navy mb-4">Fase regular</h2>
+
+    {% if estado.problema %}
+      <p class="rounded-lg px-4 py-3 text-sm font-semibold bg-red-50 text-red-700 border border-red-200">{{ estado.problema }}</p>
+    {% else %}
+      <p class="text-sm text-gray-600 mb-4">
+        Partidos jugados: <strong class="text-navy">{{ estado.jugados }} de {{ estado.esperados }}</strong>
+        <span class="text-gray-400">(todos contra todos dentro de cada grupo)</span>
+      </p>
+      <div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden mb-5">
+        <div class="h-full bg-gradient-to-r from-gold to-gold-light" style="width: {{ (estado.jugados * 100 / estado.esperados) if estado.esperados else 0 }}%"></div>
+      </div>
+
+      {% if estado.pendientes %}
+        <div class="rounded-lg px-4 py-3 text-sm bg-amber-50 text-amber-800 border border-amber-200 mb-5">
+          <p class="font-bold mb-1">{{ estado.pendientes|length }} partido(s) sin resultado:</p>
+          <ul class="list-disc ml-5 space-y-0.5">
+            {% for p in estado.pendientes[:8] %}
+              <li>{{ p.equipo_local.nombre }} vs {{ p.equipo_visitante.nombre }}
+                <span class="text-amber-600">({{ p.estado }}, {{ p.fecha.strftime('%d/%m') }})</span></li>
+            {% endfor %}
+            {% if estado.pendientes|length > 8 %}<li>…y {{ estado.pendientes|length - 8 }} más</li>{% endif %}
+          </ul>
+          <a href="{{ url_for('admin.pendientes') }}" class="inline-block mt-2 font-bold text-navy hover:text-gold-dark">Ir a Pendientes &rarr;</a>
+        </div>
+      {% elif estado.faltantes %}
+        <p class="rounded-lg px-4 py-3 text-sm bg-amber-50 text-amber-800 border border-amber-200 mb-5">
+          Faltan <strong>{{ estado.faltantes }}</strong> partido(s) por programar. Termina la fase regular desde Horarios.
+        </p>
+      {% else %}
+        <p class="rounded-lg px-4 py-3 text-sm font-semibold bg-green-50 text-green-700 border border-green-200 mb-5">
+          ✅ La fase regular terminó. Ya puedes generar las llaves.
+        </p>
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('admin.generar_llaves') }}"
+        {% if not estado.listo %}onsubmit="return confirm('La fase regular aún no termina ({{ estado.jugados }} de {{ estado.esperados }} partidos jugados). Las llaves se armarán con la tabla ACTUAL y podrás regenerarlas mientras estén en borrador. ¿Generar ahora?');"{% endif %}>
+        <button type="submit" class="w-full font-bold py-3 rounded-lg text-sm transition-all bg-gradient-to-r from-navy to-navy-light hover:shadow-elevation text-white">
+          Generar llaves de cuartos
+        </button>
+      </form>
+      {% if not estado.listo %}
+        <p class="text-xs text-gray-500 mt-3">Puedes generarlas cuando quieras; si aún faltan partidos, se usará la tabla tal como está hoy.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

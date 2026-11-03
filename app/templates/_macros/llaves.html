@@ -1,0 +1,77 @@
+{# Bracket de la fase final. Uso:
+   {% from "_macros/llaves.html" import bracket %}
+   {{ bracket(llaves, admin=False) }}
+   Lado izquierdo: 1°A-4°B y 3°A-2°B  |  Lado derecho: 1°B-4°A y 3°B-2°A #}
+
+{% macro fila(equipo, etiqueta, goles, es_ganador, hay_resultado) %}
+  <div class="flex items-center justify-between gap-3 px-4 py-2.5 {{ 'bg-gold-pale' if es_ganador else '' }}">
+    <div class="flex items-center gap-2 min-w-0">
+      <span class="text-[10px] font-bold text-gray-400 w-8 shrink-0">{{ etiqueta or '' }}</span>
+      <span class="text-sm truncate {{ 'font-bold text-navy' if es_ganador else 'font-semibold text-gray-700' }}">{{ equipo.nombre }}</span>
+    </div>
+    <span class="text-sm font-bold {{ 'text-navy' if es_ganador else 'text-gray-500' }}">{{ goles if hay_resultado else '–' }}</span>
+  </div>
+{% endmacro %}
+
+{% macro tarjeta(c, admin) %}
+  {% set p = c.partido %}
+  {% set jugado = p.estado == 'jugado' and p.resultado_local is not none %}
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden">
+    <div class="px-4 py-1.5 bg-navy text-white text-[11px] font-bold tracking-widest uppercase flex justify-between">
+      <span>Cuarto {{ c.num }}</span>
+      <span class="text-gold-light">{{ p.fecha.strftime('%d/%m') }} · {{ p.hora.strftime('%H:%M') }}</span>
+    </div>
+    <div class="divide-y divide-gray-100">
+      {{ fila(p.equipo_local, c.etiqueta_local, p.resultado_local, c.ganador and c.ganador.id == p.equipo_local_id, jugado) }}
+      {{ fila(p.equipo_visitante, c.etiqueta_visitante, p.resultado_visitante, c.ganador and c.ganador.id == p.equipo_visitante_id, jugado) }}
+    </div>
+    {% if c.empate %}
+      <p class="px-4 py-1.5 text-[11px] font-semibold text-amber-700 bg-amber-50">Empate: define quién avanza (penales) en la nota del partido.</p>
+    {% elif p.estado == 'suspendido' %}
+      <p class="px-4 py-1.5 text-[11px] font-semibold text-red-700 bg-red-50">Suspendido</p>
+    {% endif %}
+    {% if admin %}
+      <a href="{{ url_for('admin.registrar_resultado', partido_id=p.id) }}" class="block text-center text-xs font-bold text-navy hover:text-gold-dark border-t border-gray-100 py-2">
+        {{ 'Editar resultado' if jugado else 'Capturar resultado' }} &rarr;
+      </a>
+    {% elif jugado %}
+      <a href="{{ url_for('public.partido_detalle', partido_id=p.id) }}" class="block text-center text-xs font-bold text-navy hover:text-gold-dark border-t border-gray-100 py-2">Ver detalle &rarr;</a>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% macro caja_semi(titulo, a, b) %}
+  <div class="bg-white/70 rounded-xl border border-dashed border-gray-300 p-4 text-center w-full">
+    <p class="text-[11px] font-bold tracking-widest uppercase text-gray-400 mb-2">{{ titulo }}</p>
+    <p class="text-sm font-semibold {{ 'text-navy' if a.ganador else 'text-gray-400' }}">{{ a.ganador.nombre if a.ganador else 'Ganador C' ~ a.num }}</p>
+    <p class="text-[11px] text-gray-400 my-1">vs</p>
+    <p class="text-sm font-semibold {{ 'text-navy' if b.ganador else 'text-gray-400' }}">{{ b.ganador.nombre if b.ganador else 'Ganador C' ~ b.num }}</p>
+  </div>
+{% endmacro %}
+
+{% macro bracket(llaves, admin=False) %}
+  {% set c = llaves.cuartos %}
+  <div class="flex flex-col gap-6 lg:grid lg:grid-cols-5 lg:gap-5 lg:items-center">
+    <div class="order-1 lg:order-1 space-y-6">
+      <p class="text-xs uppercase tracking-widest text-gray-500 font-bold lg:text-center">Llave izquierda · Cuartos</p>
+      {{ tarjeta(c[0], admin) }}
+      {{ tarjeta(c[1], admin) }}
+    </div>
+
+    <div class="order-3 lg:order-2 flex">{{ caja_semi('Semifinal 1', c[0], c[1]) }}</div>
+
+    <div class="order-5 lg:order-3 flex flex-col items-center text-center gap-2">
+      <div class="text-4xl">🏆</div>
+      <p class="font-display font-bold text-navy">Final</p>
+      <p class="text-xs text-gray-400">Ganador SF1 vs Ganador SF2</p>
+    </div>
+
+    <div class="order-4 lg:order-4 flex">{{ caja_semi('Semifinal 2', c[2], c[3]) }}</div>
+
+    <div class="order-2 lg:order-5 space-y-6">
+      <p class="text-xs uppercase tracking-widest text-gray-500 font-bold lg:text-center">Llave derecha · Cuartos</p>
+      {{ tarjeta(c[2], admin) }}
+      {{ tarjeta(c[3], admin) }}
+    </div>
+  </div>
+{% endmacro %}

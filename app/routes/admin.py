@@ -8,7 +8,7 @@ from app.models import (
     EventoPartido, Noticia, Cancha, Arbitro, Temporada, Inscripcion,
     Disponibilidad, SolicitudCambioHorario, ObjetoPerdido, PagoCancha, Asistencia,
 )
-from app.services import jornada_service, calendario_service, notificacion_service
+from app.services import jornada_service, calendario_service, notificacion_service, llaves_service
 from app.utils import requiere_rol
 
 admin_bp = Blueprint("admin", "admin_routes", template_folder="../templates/admin")
@@ -49,6 +49,8 @@ def dashboard():
     return render_template(
         "admin/dashboard.html", jornadas=jornadas,
         equipos_count=equipos_count, jugadores_count=jugadores_count, fase=fase,
+        estado_regular=llaves_service.estado_fase_regular(),
+        llaves_generadas=llaves_service.armar_llaves() is not None,
     )
 
 
@@ -300,6 +302,43 @@ def eliminar_evento(evento_id):
     db.session.delete(evento)
     db.session.commit()
     return redirect(url_for("admin.registrar_resultado", partido_id=partido_id))
+
+
+# ---------- Fase final: llaves de cuartos ----------
+
+@admin_bp.route("/llaves")
+@login_required
+@requiere_rol("organizador", "ayudante")
+def llaves():
+    return render_template(
+        "admin/llaves.html",
+        estado=llaves_service.estado_fase_regular(),
+        llaves=llaves_service.armar_llaves(),
+    )
+
+
+@admin_bp.route("/llaves/generar", methods=["POST"])
+@login_required
+@requiere_rol("organizador", "ayudante")
+def generar_llaves():
+    try:
+        llaves_service.generar_cuartos()
+        flash("Llaves de cuartos generadas en borrador. Revisa horarios y publica la jornada cuando estén listas.", "success")
+    except llaves_service.LlavesError as e:
+        flash(str(e), "error")
+    return redirect(url_for("admin.llaves"))
+
+
+@admin_bp.route("/llaves/regenerar", methods=["POST"])
+@login_required
+@requiere_rol("organizador", "ayudante")
+def regenerar_llaves():
+    try:
+        llaves_service.regenerar_cuartos()
+        flash("Llaves regeneradas con la tabla de posiciones actual.", "success")
+    except llaves_service.LlavesError as e:
+        flash(str(e), "error")
+    return redirect(url_for("admin.llaves"))
 
 
 # ---------- Equipos y jugadores ----------
