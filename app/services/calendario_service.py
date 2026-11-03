@@ -1,6 +1,6 @@
 """Generación de calendario por reglas simples (v1, sin optimización).
 
-El torneo DCEA solo juega martes, miércoles y jueves de 10:00 a 14:00
+El torneo DCEA solo juega martes, miércoles y jueves de 10:00 a 16:00
 (bloques de una hora) porque solo hay una cancha y un árbitro disponibles.
 Ese patrón vive en app.services.jornada_grid y es la misma rejilla que usan
 la disponibilidad de los capitanes y la tabla visual de cada jornada.
@@ -78,7 +78,7 @@ def _disponibilidad_equipo(equipo_id, temporada_id, semana):
 
 def generar_propuesta_jornada(fase_id, temporada_id, fecha_base=None, numero=None):
     """Genera una jornada BORRADOR acomodando partidos en los slots fijos del
-    torneo (martes/miércoles/jueves, 10:00-14:00), priorizando los horarios
+    torneo (martes/miércoles/jueves, 10:00-16:00), priorizando los horarios
     donde ambos capitanes marcaron disponibilidad. Como solo hay una cancha,
     cada slot se usa una sola vez.
 

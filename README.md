@@ -23,7 +23,7 @@ Esto crea:
 - La organización DCEA, el torneo, temporada 2026-A, categoría, fase de grupos y los grupos A y B.
 - 12 equipos (6 por grupo) con 8 jugadores cada uno.
 - **Una sola cancha y un solo árbitro** (así es este torneo): los partidos solo se
-  juegan martes, miércoles y jueves de 10:00 a 14:00, un partido a la vez.
+  juegan martes, miércoles y jueves de 10:00 a 16:00, un partido a la vez.
 - **Solo la Jornada 1, completa y publicada**: los 6 partidos de la primera ronda
   (3 por grupo) con resultados, goleadores y tarjetas ya registrados, salvo uno
   que quedó **suspendido** (para que pruebes "Pendientes" desde el primer momento).
@@ -55,7 +55,7 @@ Abre `http://localhost:5000` en tu navegador.
 ## El horario fijo del torneo
 
 Como solo hay una cancha y un árbitro, todo el sistema gira alrededor de una
-rejilla fija: **martes, miércoles y jueves, de 10:00 a 14:00** (bloques de una
+rejilla fija: **martes, miércoles y jueves, de 10:00 a 16:00** (bloques de una
 hora). Esa regla vive en `app/services/jornada_grid.py` y la usan:
 
 - La disponibilidad que registran los capitanes (grid de 3 días x 4 horas).
@@ -105,7 +105,7 @@ perfiles de equipo y de jugador, noticias.
 **Portal de capitanes** (mismo lenguaje visual):
 - Inicio: próximo partido, posición en el grupo, disponibilidad de esta semana,
   alertas de arbitraje pendiente y objetos perdidos recientes.
-- Horarios: grid de martes/miércoles/jueves x 10:00-14:00 para marcar disponibilidad;
+- Horarios: grid de martes/miércoles/jueves x 10:00-16:00 para marcar disponibilidad;
   se navega y edita semana por semana.
 - Cambios de horario: al pedir un cambio se muestra la tabla-calendario de esa
   jornada; el capitán marca uno o varios horarios libres como propuesta. El rival

@@ -1,5 +1,5 @@
 """Estructura fija de horarios del torneo DCEA: los partidos solo se juegan
-martes, miércoles y jueves, de 10:00 a 14:00 (bloques de una hora), porque
+martes, miércoles y jueves, de 10:00 a 16:00 (bloques de una hora; el último juego empieza a las 15:00), porque
 solo hay una cancha y un árbitro disponibles. Este módulo centraliza esa
 regla para que la disponibilidad de capitanes, la generación automática de
 calendario y la tabla visual de cada jornada usen siempre la misma rejilla.
@@ -7,7 +7,7 @@ calendario y la tabla visual de cada jornada usen siempre la misma rejilla.
 from datetime import timedelta, date as date_cls
 
 DIAS_GRID = ["martes", "miercoles", "jueves"]
-HORAS_GRID = ["10:00", "11:00", "12:00", "13:00", "14:00"]  # hora de inicio de cada juego (dura 1 hora)
+HORAS_GRID = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00"]  # hora de inicio de cada juego (dura 1 hora)
 DIA_INDEX = {"lunes": 0, "martes": 1, "miercoles": 2, "jueves": 3, "viernes": 4, "sabado": 5, "domingo": 6}
 DIA_LABEL = {"martes": "Martes", "miercoles": "Miércoles", "jueves": "Jueves"}
 
