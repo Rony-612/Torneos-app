@@ -1,9 +1,72 @@
 {% extends "admin/base.html" %}
 {% from "_macros/llaves.html" import bracket %}
+{% macro empates_inputs(r) %}
+  {% for e in r.empates %}
+    <div class="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 mb-3">
+      <p class="text-sm font-semibold text-amber-800 mb-2">
+        Empate {{ e.partido.resultado_local }}–{{ e.partido.resultado_visitante }}:
+        {{ e.partido.equipo_local.nombre }} vs {{ e.partido.equipo_visitante.nombre }}. ¿Quién avanzó?
+      </p>
+      <select name="ganador_{{ e.partido.id }}" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+        <option value="" {{ 'selected' if not e.preseleccion }}>Elige al equipo que avanzó…</option>
+        <option value="{{ e.partido.equipo_local_id }}" {{ 'selected' if e.preseleccion == e.partido.equipo_local_id }}>{{ e.partido.equipo_local.nombre }}</option>
+        <option value="{{ e.partido.equipo_visitante_id }}" {{ 'selected' if e.preseleccion == e.partido.equipo_visitante_id }}>{{ e.partido.equipo_visitante.nombre }}</option>
+      </select>
+    </div>
+  {% endfor %}
+{% endmacro %}
+
+{% macro panel_ronda(r) %}
+  <div class="bg-white rounded-xl shadow-card border border-gray-100 p-5">
+    <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
+      <p class="font-bold text-navy">{{ r.nombre }}
+        {% if r.jornada %}
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full ml-2 {{ 'badge-green' if r.jornada.estado == 'publicada' else 'badge-yellow' }}">{{ r.jornada.estado }}</span>
+        {% endif %}
+      </p>
+      {% if r.jornada %}
+        <a href="{{ url_for('admin.jornada_detalle', jornada_id=r.jornada.id) }}" class="bg-navy hover:bg-navy-light text-white font-bold px-5 py-2.5 rounded-lg transition-all text-sm">Gestionar y publicar</a>
+      {% endif %}
+    </div>
+
+    {% if r.jornada %}
+      {% if r.jornada.estado == 'borrador' and not r.siguiente_existe %}
+        <form method="POST" action="{{ url_for('admin.regenerar_ronda', ronda=r.clave) }}"
+              onsubmit="return confirm('Se borrarán estos partidos y se volverán a armar con los resultados actuales. ¿Continuar?');">
+          {{ empates_inputs(r) }}
+          <button type="submit" class="text-navy font-bold px-4 py-2 text-sm border border-navy/20 rounded-lg hover:bg-navy/5">Regenerar {{ r.nombre|lower }}</button>
+        </form>
+      {% else %}
+        <p class="text-sm text-gray-500">{{ 'Ya está publicada.' if r.jornada.estado == 'publicada' else 'Para regenerarla, primero hay que quitar la ronda siguiente.' }}</p>
+      {% endif %}
+    {% else %}
+      {% if r.motivo %}
+        <p class="text-sm text-gray-500 mb-3">{{ r.motivo }}</p>
+      {% elif r.faltan %}
+        <div class="rounded-lg px-4 py-3 text-sm bg-amber-50 text-amber-800 border border-amber-200 mb-3">
+          <p class="font-bold mb-1">Faltan resultados de {{ r.anterior_nombre }}:</p>
+          <ul class="list-disc ml-5">
+            {% for p in r.faltan %}<li>{{ p.equipo_local.nombre }} vs {{ p.equipo_visitante.nombre }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <p class="text-sm text-green-700 font-semibold mb-3">✅ Ya se jugó la ronda anterior. Puedes generar.</p>
+      {% endif %}
+      <form method="POST" action="{{ url_for('admin.generar_ronda', ronda=r.clave) }}">
+        {% if r.puede %}{{ empates_inputs(r) }}{% endif %}
+        <button type="submit" {{ 'disabled' if not r.puede }}
+          class="w-full sm:w-auto font-bold px-6 py-2.5 rounded-lg text-sm transition-all {{ 'bg-gradient-to-r from-navy to-navy-light hover:shadow-elevation text-white' if r.puede else 'bg-gray-200 text-gray-400 cursor-not-allowed' }}">
+          Generar {{ r.nombre|lower }}
+        </button>
+      </form>
+    {% endif %}
+  </div>
+{% endmacro %}
+
 {% block title %}Llaves{% endblock %}
 {% block content %}
 <div class="mb-8">
-  <h1 class="font-display text-3xl sm:text-4xl font-bold text-navy">Llaves de cuartos</h1>
+  <h1 class="font-display text-3xl sm:text-4xl font-bold text-navy">Llaves de la fase final</h1>
   <p class="text-gray-600 text-base mt-2">Clasifican los 4 mejores de cada grupo: 1°A vs 4°B y 3°A vs 2°B a la izquierda; 1°B vs 4°A y 3°B vs 2°A a la derecha.</p>
 </div>
 
@@ -28,6 +91,14 @@
     </div>
   </div>
   <div class="overflow-x-auto pb-2">{{ bracket(llaves, admin=True) }}</div>
+
+  <div class="mt-10">
+    <h2 class="font-display text-2xl font-bold text-navy mb-1">Siguientes rondas</h2>
+    <p class="text-sm text-gray-500 mb-4">Se generan en cuanto estén capturados los resultados de la ronda anterior. Si hay un empate, eliges quién avanzó.</p>
+    <div class="grid gap-4 md:grid-cols-2">
+      {% for r in rondas %}{{ panel_ronda(r) }}{% endfor %}
+    </div>
+  </div>
 
 {% else %}
   <div class="bg-white rounded-xl shadow-card border border-gray-100 p-7 max-w-2xl">

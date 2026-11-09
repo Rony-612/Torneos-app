@@ -70,11 +70,8 @@ def calendario():
 
 @public_bp.route("/llaves")
 def llaves():
-    data = llaves_service.armar_llaves()
-    # Mientras la jornada de cuartos siga en borrador, el publico no la ve.
-    if data and data["jornada"].estado != "publicada":
-        data = None
-    return render_template("public/llaves.html", llaves=data)
+    # Las rondas cuya jornada sigue en borrador no se muestran al publico.
+    return render_template("public/llaves.html", llaves=llaves_service.armar_llaves(publico=True))
 
 
 @public_bp.route("/partido/<int:partido_id>")

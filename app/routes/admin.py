@@ -310,10 +310,15 @@ def eliminar_evento(evento_id):
 @login_required
 @requiere_rol("organizador", "ayudante")
 def llaves():
+    llaves = llaves_service.armar_llaves()
+    rondas = (
+        [llaves_service.estado_ronda("semifinales"), llaves_service.estado_ronda("final")]
+        if llaves else []
+    )
     return render_template(
         "admin/llaves.html",
         estado=llaves_service.estado_fase_regular(),
-        llaves=llaves_service.armar_llaves(),
+        llaves=llaves, rondas=rondas,
     )
 
 
@@ -336,6 +341,46 @@ def regenerar_llaves():
     try:
         llaves_service.regenerar_cuartos()
         flash("Llaves regeneradas con la tabla de posiciones actual.", "success")
+    except llaves_service.LlavesError as e:
+        flash(str(e), "error")
+    return redirect(url_for("admin.llaves"))
+
+
+def _elegidos_empate():
+    """{partido_id: equipo_id} de los selectores 'ganador_<partido_id>' del formulario."""
+    elegidos = {}
+    for k, v in request.form.items():
+        if k.startswith("ganador_") and v.isdigit():
+            try:
+                elegidos[int(k.split("_", 1)[1])] = int(v)
+            except ValueError:
+                pass
+    return elegidos
+
+
+@admin_bp.route("/llaves/<ronda>/generar", methods=["POST"])
+@login_required
+@requiere_rol("organizador", "ayudante")
+def generar_ronda(ronda):
+    if ronda not in ("semifinales", "final"):
+        abort(404)
+    try:
+        llaves_service.generar_ronda(ronda, _elegidos_empate())
+        flash(f"{llaves_service.RONDAS[ronda]['nombre']} generada(s) en borrador. Ajusta día y hora y publica la jornada.", "success")
+    except llaves_service.LlavesError as e:
+        flash(str(e), "error")
+    return redirect(url_for("admin.llaves"))
+
+
+@admin_bp.route("/llaves/<ronda>/regenerar", methods=["POST"])
+@login_required
+@requiere_rol("organizador", "ayudante")
+def regenerar_ronda(ronda):
+    if ronda not in ("semifinales", "final"):
+        abort(404)
+    try:
+        llaves_service.regenerar_ronda(ronda, _elegidos_empate())
+        flash(f"{llaves_service.RONDAS[ronda]['nombre']} regenerada(s) con los resultados actuales.", "success")
     except llaves_service.LlavesError as e:
         flash(str(e), "error")
     return redirect(url_for("admin.llaves"))
